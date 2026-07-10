@@ -9,9 +9,9 @@ end
 M.commands = {
 	{
 		label = "Plenary test all",
-		type = "nvim",
 		cmd = function(filename)
 			return {
+				type = "nvim",
 				command_line = "PlenaryBustedDirectory " .. M.get_project_dir(filename),
 			}
 		end,
