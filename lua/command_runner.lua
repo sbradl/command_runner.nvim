@@ -14,10 +14,16 @@ M.register = function(ext, command_list)
 	end
 end
 
+M.register(":directory", require("default_commands").director_commands)
 M.register("ts", require("vitest").commands)
 M.register("ts", require("playwright").commands)
 M.register("cs", require("dotnet_test").commands)
 M.register("lua", require("lua_plenary").commands)
+
+local elixir = require("elixir_mix")
+M.register(":directory", elixir.directory_commands)
+M.register("ex", elixir.commands)
+M.register("exs", elixir.commands)
 
 M.setup = function(opts)
 	opts = opts or {}

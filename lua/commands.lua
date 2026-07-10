@@ -1,7 +1,6 @@
 local M = {}
 
 local t = require("terminal")
-local default_commands = require("default_commands").commands
 
 M.open_terminal_and_run_command = function(command)
 	t.open_new_terminal(command.dir)
@@ -19,7 +18,11 @@ M.choose_and_run_command = function(commands)
 	local name = vim.api.nvim_buf_get_name(buf)
 	local ext = vim.fn.fnamemodify(name, ":e")
 
-	local choices = commands[ext] or default_commands
+	if ext == "" then
+		ext = ":directory"
+	end
+
+	local choices = commands[ext] or {}
 
 	local options = {}
 	for _, choice in ipairs(choices) do
