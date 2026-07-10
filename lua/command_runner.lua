@@ -87,7 +87,7 @@ M.setup = function(opts)
 end
 
 M.run_command = function()
-	require("commands").choose_and_run_command(M._filetype_commands)
+	require("commands").choose_and_run_command(M._commands)
 end
 
 return M
