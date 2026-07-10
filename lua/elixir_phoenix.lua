@@ -20,6 +20,7 @@ M.directory_commands = {
 	},
 }
 
+---@type CommandDescription[]
 M.commands = {
 	{
 		label = "mix phx.server",

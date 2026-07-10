@@ -26,14 +26,13 @@ M.get_namespace = function(_, buf)
 	return nil
 end
 
+---@type CommandDescription[]
 M.commands = {
 	{
 		label = "dotnet test current file",
 		cmd = function(filename)
-			local sln_dir = M.get_solution_dir(filename)
-
 			return {
-				dir = sln_dir,
+				dir = M.get_solution_dir(filename),
 				command_line = "dotnet test --filter ClassName~" .. vim.fn.fnamemodify(filename, ":t:r"),
 			}
 		end,
@@ -41,22 +40,17 @@ M.commands = {
 	{
 		label = "dotnet test current namespace",
 		cmd = function(filename, buf)
-			local sln_dir = M.get_solution_dir(filename)
-			local ns = M.get_namespace(filename, buf)
-
 			return {
-				dir = sln_dir,
-				command_line = "dotnet test --filter FullyQualifiedName~" .. ns,
+				dir = M.get_solution_dir(filename),
+				command_line = "dotnet test --filter FullyQualifiedName~" .. M.get_namespace(filename, buf),
 			}
 		end,
 	},
 	{
 		label = "dotnet test solution",
 		cmd = function(filename, buf)
-			local sln_dir = M.get_solution_dir(filename)
-
 			return {
-				dir = sln_dir,
+				dir = M.get_solution_dir(filename),
 				command_line = "dotnet test",
 			}
 		end,

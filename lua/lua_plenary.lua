@@ -6,6 +6,7 @@ M.get_project_dir = function(filename)
 	return U.get_git_dir(filename)
 end
 
+---@type CommandDescription[]
 M.commands = {
 	{
 		label = "Plenary test all",

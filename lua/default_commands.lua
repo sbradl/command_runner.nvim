@@ -1,5 +1,6 @@
 local M = {}
 
+---@type CommandDescription[]
 M.directory_commands = {
 	{
 		label = "List Directory",
