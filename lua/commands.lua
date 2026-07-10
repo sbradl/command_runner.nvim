@@ -45,7 +45,7 @@ M.choose_and_run_command = function(commands)
 
 		if selected_cmd and type(selected_cmd) == "function" then
 			local command_description = selected_cmd(name, buf)
-			vim.notify("determining command type", vim.log.levels.INFO)
+			vim.notify("determining command type " .. command_description.type, vim.log.levels.INFO)
 			local command_type = command_description.type or "terminal"
 			vim.notify("command type: " .. command_type, vim.log.levels.INFO)
 
