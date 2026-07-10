@@ -20,38 +20,38 @@ end
 local function register_builtin_commands(opts)
 	if opts.ts_vitest == nil or opts.ts_vitest.enable then
 		vim.notify("enable ts_vitest", vim.log.levels.DEBUG)
-		register("ts", require("command_runner.builtin.vitest").commands)
+		M._register("ts", require("command_runner.builtin.vitest").commands)
 	end
 
 	if opts.ts_playwright == nil or opts.ts_playwright.enable then
 		vim.notify("enable ts_playwright", vim.log.levels.DEBUG)
-		register("ts", require("command_runner.builtin.playwright").commands)
+		M._register("ts", require("command_runner.builtin.playwright").commands)
 	end
 
 	if opts.cs_dotnet_test == nil or opts.cs_dotnet_test.enable then
 		vim.notify("enable cs_dotnet_test", vim.log.levels.DEBUG)
-		register("cs", require("command_runner.builtin.dotnet_test").commands)
+		M._register("cs", require("command_runner.builtin.dotnet_test").commands)
 	end
 
 	if opts.lua_plenary == nil or opts.lua_plenary.enable then
 		vim.notify("enable lua_plenary", vim.log.levels.DEBUG)
-		register("lua", require("command_runner.builtin.lua_plenary").commands)
+		M._register("lua", require("command_runner.builtin.lua_plenary").commands)
 	end
 
 	if opts.elixir_mix == nil or opts.elixir_mix.enable then
 		vim.notify("enable elixir_mix", vim.log.levels.DEBUG)
 		local elixir = require("command_runner.builtin.elixir_mix")
-		register(":directory", elixir.directory_commands)
-		register("ex", elixir.commands)
-		register("exs", elixir.commands)
+		M._register(":directory", elixir.directory_commands)
+		M._register("ex", elixir.commands)
+		M._register("exs", elixir.commands)
 	end
 
 	if opts.elixir_phoenix == nil or opts.elixir_phoenix.enable then
 		vim.notify("enable elixir_phoenix", vim.log.levels.DEBUG)
 		local elixir_phoenix = require("command_runner.builtin.elixir_phoenix")
-		register(":directory", elixir_phoenix.directory_commands)
-		register("ex", elixir_phoenix.commands)
-		register("exs", elixir_phoenix.commands)
+		M._register(":directory", elixir_phoenix.directory_commands)
+		M._register("ex", elixir_phoenix.commands)
+		M._register("exs", elixir_phoenix.commands)
 	end
 end
 
