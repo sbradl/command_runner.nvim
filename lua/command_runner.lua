@@ -12,7 +12,7 @@ local function register(ext, command_list)
 	vim.notify("registering commands for " .. ext, vim.log.levels.INFO)
 	for _, cmd in ipairs(command_list) do
 		vim.notify("registering command " .. cmd.label, vim.log.levels.INFO)
-		table.insert(M._filetype_commands[ext], cmd)
+		table.insert(M._commands[ext], cmd)
 	end
 end
 
