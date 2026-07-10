@@ -1,6 +1,6 @@
 local M = {}
 
-local U = require("util")
+local U = require("command_runner.util")
 
 M.get_project_dir = function(filename)
 	return U.get_git_dir(filename)
