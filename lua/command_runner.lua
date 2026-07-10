@@ -21,9 +21,13 @@ M.register("cs", require("dotnet_test").commands)
 M.register("lua", require("lua_plenary").commands)
 
 local elixir = require("elixir_mix")
+local elixir_phoenix = require("elixir_phoenix")
 M.register(":directory", elixir.directory_commands)
+M.register(":directory", elixir_phoenix.directory_commands)
 M.register("ex", elixir.commands)
 M.register("exs", elixir.commands)
+M.register("ex", elixir_phoenix.commands)
+M.register("exs", elixir_phoenix.commands)
 
 M.setup = function(opts)
 	opts = opts or {}
