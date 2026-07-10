@@ -17,6 +17,7 @@ end
 M.register("ts", require("vitest").commands)
 M.register("ts", require("playwright").commands)
 M.register("cs", require("dotnet_test").commands)
+M.register("lua", require("lua_plenary").commands)
 
 M.setup = function(opts)
 	opts = opts or {}
