@@ -14,7 +14,7 @@ M.register = function(ext, command_list)
 	end
 end
 
-M.register(":directory", require("default_commands").director_commands)
+M.register(":directory", require("default_commands").directory_commands)
 M.register("ts", require("vitest").commands)
 M.register("ts", require("playwright").commands)
 M.register("cs", require("dotnet_test").commands)

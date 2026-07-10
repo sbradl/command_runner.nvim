@@ -1,6 +1,6 @@
 local M = {}
 
-M.commands = {
+M.directory_commands = {
 	{
 		{
 			label = "List Directory",
