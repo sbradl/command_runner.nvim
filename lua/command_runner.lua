@@ -16,28 +16,44 @@ local function register(ext, command_list)
 	end
 end
 
-local function register_builtin_commands()
-	register(":directory", require("default_commands").directory_commands)
-	register("ts", require("vitest").commands)
-	register("ts", require("playwright").commands)
-	register("cs", require("dotnet_test").commands)
-	register("lua", require("lua_plenary").commands)
+---@param opts table<BuiltinCommands, BuiltinCommandOpts>
+local function register_builtin_commands(opts)
+	if opts.ts_vitest == nil or opts.ts_vitest.enable then
+		register("ts", require("builtin.vitest").commands)
+	end
 
-	local elixir = require("elixir_mix")
-	local elixir_phoenix = require("elixir_phoenix")
-	register(":directory", elixir.directory_commands)
-	register(":directory", elixir_phoenix.directory_commands)
-	register("ex", elixir.commands)
-	register("exs", elixir.commands)
-	register("ex", elixir_phoenix.commands)
-	register("exs", elixir_phoenix.commands)
+	if opts.ts_playwright == nil or opts.ts_playwright.enable then
+		register("ts", require("builtin.playwright").commands)
+	end
+
+	if opts.cs_dotnet_test == nil or opts.cs_dotnet_test.enable then
+		register("cs", require("builtin.dotnet_test").commands)
+	end
+
+	if opts.lua_plenary == nil or opts.lua_plenary.enable then
+		register("lua", require("builtin.lua_plenary").commands)
+	end
+
+	if opts.elixir_mix == nil or opts.elixir_mix.enable then
+		local elixir = require("builtin.elixir_mix")
+		register(":directory", elixir.directory_commands)
+		register("ex", elixir.commands)
+		register("exs", elixir.commands)
+	end
+
+	if opts.elixir_phoenix == nil or opts.elixir_phoenix.enable then
+		local elixir_phoenix = require("builtin.elixir_phoenix")
+		register(":directory", elixir_phoenix.directory_commands)
+		register("ex", elixir_phoenix.commands)
+		register("exs", elixir_phoenix.commands)
+	end
 end
 
 ---
 ---@param opts CommandRunnerOpts
 M.setup = function(opts)
 	opts = opts or {}
-	register_builtin_commands()
+	register_builtin_commands(opts.builtin or {})
 
 	if opts.commands then
 		for ext, command_list in pairs(opts.commands) do

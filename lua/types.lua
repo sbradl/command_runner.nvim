@@ -1,7 +1,14 @@
 ---@meta command_runner types
 
+---@alias BuiltinCommands "ts_vitest" | "ts_playwright" | "cs_dotnet_test" | "lua_plenary" | "elixir_mix" | "elixir_phoenix"
+
 ---@class CommandRunnerOpts
 ---@field commands? table<string, CommandDescription[]> A table command descriptions by file-extension. For directory commands the special string ":directory" can be used.
+---@field builtin? table<BuiltinCommands, BuiltinCommandOpts> Options for the builtin commands
+
+---@class BuiltinCommandOpts
+---@field enable? boolean
+
 ---@alias CommandType "terminal" | "nvim" Specifies how the command should be executed - whether in a terminal or as a nvim command.
 
 ---@class Command
