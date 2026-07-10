@@ -4,7 +4,7 @@ M._commands = {}
 
 ---@param ext string
 ---@param command_list CommandDescription[]
-local function register(ext, command_list)
+M._register = function(ext, command_list)
 	if not M._commands[ext] then
 		M._commands[ext] = {}
 	end
@@ -63,7 +63,7 @@ M.setup = function(opts)
 
 	if opts.commands then
 		for ext, command_list in pairs(opts.commands) do
-			M.register(ext, command_list)
+			M._register(ext, command_list)
 		end
 	end
 
@@ -82,7 +82,7 @@ M.setup = function(opts)
 
 				if type(project_local_commands) == "table" then
 					for ext, command_list in pairs(project_local_commands) do
-						M.register(ext, command_list)
+						M._register(ext, command_list)
 					end
 				end
 			else
