@@ -3,8 +3,11 @@ local M = {}
 M.directory_commands = {
 	{
 		label = "List Directory",
-		cmd = function(_)
-			return "ls -la"
+		cmd = function(filename)
+			return {
+				dir = vim.fs.dirname(filename),
+				command_line = "ls -la",
+			}
 		end,
 	},
 }
