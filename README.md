@@ -1,5 +1,7 @@
 # command_runner.nvim
 
+[![Tests](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml)
+
 Configure and execute project-level and global commands.
 
 ## run_command
