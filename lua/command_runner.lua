@@ -70,12 +70,10 @@ M.setup = function(opts)
 	local project_local_nvim_config = vim.fs.root(0, ".nvim")
 
 	if project_local_nvim_config then
-		vim.notify("Found project level nvim config", vim.log.levels.DEBUG)
 		local project_local_commands_file = project_local_nvim_config .. "/.nvim/command_runner.lua"
-		vim.notify("Searching " .. project_local_commands_file, vim.log.levels.DEBUG)
 
 		if vim.fn.filereadable(project_local_commands_file) == 1 then
-			vim.notify("Found project level command config", vim.log.levels.DEBUG)
+			vim.notify("Found project level command config", vim.log.levels.INFO)
 			local chunk, err = loadfile(project_local_commands_file)
 			if not chunk then
 				vim.notify(
