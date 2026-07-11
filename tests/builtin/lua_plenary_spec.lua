@@ -1,32 +1,47 @@
 local plenary = require("command_runner.builtin.lua_plenary")
 
-local function make_tree(files)
-	local root = vim.fn.tempname()
-	vim.fn.mkdir(root, "p")
-	for _, rel in ipairs(files or {}) do
-		local full = root .. "/" .. rel
-		vim.fn.mkdir(vim.fn.fnamemodify(full, ":h"), "p")
-		local fd = assert(io.open(full, "w"))
-		fd:close()
-	end
-	return root
-end
+local repo = vim.fn.getcwd()
+local fixture = repo .. "/tests/testdata/lua_plenary/lua/a.lua"
+
+local find_command = require("test_util").find_command
 
 describe("command_runner.builtin.lua_plenary", function()
-	it("uses the git root as the project dir", function()
-		local root = make_tree({ ".git/HEAD", "lua/a.lua" })
-		assert.equals(root, plenary.get_project_dir(root .. "/lua/a.lua"))
-		vim.fn.delete(root, "rf")
+	describe("get_project_dir", function()
+		describe("given a file inside a git repository", function()
+			local file
+
+			before_each(function()
+				file = fixture
+				assert.equals(1, vim.fn.isdirectory(repo .. "/.git"))
+			end)
+
+			it("should return the repository root", function()
+				assert.equals(repo, plenary.get_project_dir(file))
+			end)
+		end)
 	end)
 
-	it("builds a PlenaryBustedDirectory nvim command rooted at the repo", function()
-		local root = make_tree({ ".git/HEAD", "lua/a.lua" })
-		local c = plenary.commands[1]
-		assert.equals("Plenary test all", c.label)
+	describe("Plenary test all", function()
+		local cmd
 
-		local out = c.cmd(root .. "/lua/a.lua")
-		assert.equals("nvim", out.type)
-		assert.equals("PlenaryBustedDirectory " .. root, out.command_line)
-		vim.fn.delete(root, "rf")
+		before_each(function()
+			cmd = find_command(plenary.commands, "Plenary test all")
+		end)
+
+		describe("given a file inside a git repository", function()
+			local file
+
+			before_each(function()
+				file = fixture
+				assert.equals(1, vim.fn.isdirectory(repo .. "/.git"))
+			end)
+
+			it("should build a PlenaryBustedDirectory nvim command rooted at the repo", function()
+				local out = cmd.cmd(file)
+
+				assert.equals("nvim", out.type)
+				assert.equals("PlenaryBustedDirectory " .. repo, out.command_line)
+			end)
+		end)
 	end)
 end)

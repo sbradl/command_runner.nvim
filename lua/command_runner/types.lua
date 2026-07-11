@@ -4,10 +4,10 @@
 
 ---@class CommandRunnerOpts
 ---@field commands? table<string, CommandDescription[]> A table command descriptions by file-extension. For directory commands the special string ":directory" can be used.
----@field builtin? table<BuiltinCommands, BuiltinCommandOpts> Options for the builtin commands
+---@field builtin? BuiltinOpts | false Options for the builtin commands. Pass `false` to disable all builtins at once.
 
----@class BuiltinCommandOpts
----@field enable? boolean
+---@class BuiltinOpts
+---@field disable? BuiltinCommands[] Builtin keys to disable. Any key not listed stays enabled.
 
 ---@alias CommandType "terminal" | "nvim" Specifies how the command should be executed - whether in a terminal or as a nvim command.
 

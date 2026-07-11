@@ -1,16 +1,6 @@
 local dotnet = require("command_runner.builtin.dotnet_test")
 
-local function make_tree(files)
-	local root = vim.fn.tempname()
-	vim.fn.mkdir(root, "p")
-	for _, rel in ipairs(files or {}) do
-		local full = root .. "/" .. rel
-		vim.fn.mkdir(vim.fn.fnamemodify(full, ":h"), "p")
-		local fd = assert(io.open(full, "w"))
-		fd:close()
-	end
-	return root
-end
+local data = vim.fn.getcwd() .. "/tests/testdata/dotnet_test"
 
 local function buf_with(lines)
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -18,70 +8,164 @@ local function buf_with(lines)
 	return buf
 end
 
+local find_command = require("test_util").find_command
+
 describe("command_runner.builtin.dotnet_test", function()
-	it("finds the solution dir via .sln", function()
-		local root = make_tree({ "App.sln", "proj/App.csproj", "proj/FooTests.cs" })
-		assert.equals(root, dotnet.get_solution_dir(root .. "/proj/FooTests.cs"))
-		vim.fn.delete(root, "rf")
+	describe("get_solution_dir", function()
+		describe("given a solution marked by .sln", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should return the directory containing the .sln", function()
+				assert.equals(root, dotnet.get_solution_dir(file))
+			end)
+		end)
+
+		describe("given a solution marked by .slnx", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/xml_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should return the directory containing the .slnx", function()
+				assert.equals(root, dotnet.get_solution_dir(file))
+			end)
+		end)
 	end)
 
-	it("finds the solution dir via .slnx", function()
-		local root = make_tree({ "App.slnx", "proj/FooTests.cs" })
-		assert.equals(root, dotnet.get_solution_dir(root .. "/proj/FooTests.cs"))
-		vim.fn.delete(root, "rf")
+	describe("get_project_dir", function()
+		describe("given a project marked by .csproj", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should return the directory containing the .csproj", function()
+				assert.equals(root .. "/proj", dotnet.get_project_dir(file))
+			end)
+		end)
 	end)
 
-	it("finds the project dir via .csproj", function()
-		local root = make_tree({ "App.sln", "proj/App.csproj", "proj/FooTests.cs" })
-		assert.equals(root .. "/proj", dotnet.get_project_dir(root .. "/proj/FooTests.cs"))
-		vim.fn.delete(root, "rf")
+	describe("get_namespace", function()
+		describe("given a buffer containing a namespace declaration", function()
+			local buf
+
+			before_each(function()
+				buf = buf_with({ "using System;", "", "namespace My.App.Tests", "{", "}" })
+			end)
+
+			after_each(function()
+				vim.api.nvim_buf_delete(buf, { force = true })
+			end)
+
+			it("should return the declared namespace", function()
+				assert.equals("My.App.Tests", dotnet.get_namespace(nil, buf))
+			end)
+		end)
+
+		describe("given a buffer without a namespace declaration", function()
+			local buf
+
+			before_each(function()
+				buf = buf_with({ "// nothing here" })
+			end)
+
+			after_each(function()
+				vim.api.nvim_buf_delete(buf, { force = true })
+			end)
+
+			it("should return nil", function()
+				assert.is_nil(dotnet.get_namespace(nil, buf))
+			end)
+		end)
 	end)
 
-	it("reads the namespace from the buffer", function()
-		local buf = buf_with({ "using System;", "", "namespace My.App.Tests", "{", "}" })
-		assert.equals("My.App.Tests", dotnet.get_namespace(nil, buf))
-		vim.api.nvim_buf_delete(buf, { force = true })
+	describe("'dotnet test current file' command", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(dotnet.commands, "dotnet test current file")
+		end)
+
+		describe("given a test file inside a solution", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should filter by the class name derived from the file", function()
+				local out = cmd.cmd(file)
+				assert.equals(root, out.dir)
+				assert.equals("dotnet test --filter ClassName~FooTests", out.command_line)
+			end)
+		end)
 	end)
 
-	it("returns nil when there is no namespace", function()
-		local buf = buf_with({ "// nothing here" })
-		assert.is_nil(dotnet.get_namespace(nil, buf))
-		vim.api.nvim_buf_delete(buf, { force = true })
+	describe("'dotnet test current namespace' command", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(dotnet.commands, "dotnet test current namespace")
+		end)
+
+		describe("given a buffer with a namespace inside a solution", function()
+			local root
+			local file
+			local buf
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+				buf = buf_with({ "namespace My.App.Tests" })
+			end)
+
+			after_each(function()
+				vim.api.nvim_buf_delete(buf, { force = true })
+			end)
+
+			it("should filter by the fully-qualified namespace", function()
+				local out = cmd.cmd(file, buf)
+				assert.equals(root, out.dir)
+				assert.equals("dotnet test --filter FullyQualifiedName~My.App.Tests", out.command_line)
+			end)
+		end)
 	end)
 
-	it("filters tests by class name for the current file", function()
-		local root = make_tree({ "App.sln", "proj/FooTests.cs" })
-		local c = dotnet.commands[1]
-		assert.equals("dotnet test current file", c.label)
+	describe("'dotnet test solution' command", function()
+		local cmd
 
-		local out = c.cmd(root .. "/proj/FooTests.cs")
-		assert.equals(root, out.dir)
-		assert.equals("dotnet test --filter ClassName~FooTests", out.command_line)
-		vim.fn.delete(root, "rf")
-	end)
+		before_each(function()
+			cmd = find_command(dotnet.commands, "dotnet test solution")
+		end)
 
-	it("filters tests by the namespace of the current buffer", function()
-		local root = make_tree({ "App.sln", "proj/FooTests.cs" })
-		local buf = buf_with({ "namespace My.App.Tests" })
-		local c = dotnet.commands[2]
-		assert.equals("dotnet test current namespace", c.label)
+		describe("given a test file inside a solution", function()
+			local root
+			local file
 
-		local out = c.cmd(root .. "/proj/FooTests.cs", buf)
-		assert.equals(root, out.dir)
-		assert.equals("dotnet test --filter FullyQualifiedName~My.App.Tests", out.command_line)
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
 
-		vim.api.nvim_buf_delete(buf, { force = true })
-		vim.fn.delete(root, "rf")
-	end)
-
-	it("runs the whole solution", function()
-		local root = make_tree({ "App.sln", "proj/FooTests.cs" })
-		local c = dotnet.commands[3]
-		assert.equals("dotnet test solution", c.label)
-
-		local out = c.cmd(root .. "/proj/FooTests.cs")
-		assert.equals(root, out.dir)
-		assert.equals("dotnet test", out.command_line)
-		vim.fn.delete(root, "rf")
+			it("should run the whole solution", function()
+				local out = cmd.cmd(file)
+				assert.equals(root, out.dir)
+				assert.equals("dotnet test", out.command_line)
+			end)
+		end)
 	end)
 end)

@@ -1,48 +1,81 @@
 local phx = require("command_runner.builtin.elixir_phoenix")
 
-local function make_tree(files)
-	local root = vim.fn.tempname()
-	vim.fn.mkdir(root, "p")
-	for _, rel in ipairs(files or {}) do
-		local full = root .. "/" .. rel
-		vim.fn.mkdir(vim.fn.fnamemodify(full, ":h"), "p")
-		local fd = assert(io.open(full, "w"))
-		fd:close()
-	end
-	return root
-end
+local data = vim.fn.getcwd() .. "/tests/testdata/elixir_phoenix"
+
+local find_command = require("test_util").find_command
 
 describe("command_runner.builtin.elixir_phoenix", function()
-	it("finds the project dir via mix.exs", function()
-		local root = make_tree({ "mix.exs", "lib/app.ex" })
-		assert.equals(root, phx.get_project_dir(root .. "/lib/app.ex"))
-		vim.fn.delete(root, "rf")
+	describe("get_project_dir", function()
+		describe("given a file inside a mix project", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/lib/app.ex"
+			end)
+
+			it("should return the directory containing mix.exs", function()
+				assert.equals(root, phx.get_project_dir(file))
+			end)
+		end)
 	end)
 
-	it("offers 'mix phx.server' inside a project", function()
-		local root = make_tree({ "mix.exs", "lib/app.ex" })
-		local c = phx.commands[1]
-		assert.equals("mix phx.server", c.label)
-		assert.is_true(c.filter(root .. "/lib/app.ex"))
+	describe("mix phx.server", function()
+		local cmd
 
-		local out = c.cmd(root .. "/lib/app.ex")
-		assert.equals(root, out.dir)
-		assert.equals("mix phx.server", out.command_line)
-		vim.fn.delete(root, "rf")
+		before_each(function()
+			cmd = find_command(phx.commands, "mix phx.server")
+		end)
+
+		describe("given a file inside a mix project", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/lib/app.ex"
+			end)
+
+			it("should be offered by the filter", function()
+				assert.is_true(cmd.filter(file))
+			end)
+
+			it("should build the mix phx.server command", function()
+				local out = cmd.cmd(file)
+
+				assert.equals(root, out.dir)
+				assert.equals("mix phx.server", out.command_line)
+			end)
+		end)
+
+		describe("given a file outside any mix project", function()
+			local file
+
+			before_each(function()
+				file = data .. "/bare/app.ex"
+
+				assert.is_nil(phx.get_project_dir(file))
+			end)
+
+			it("should not be offered by the filter", function()
+				assert.is_false(cmd.filter(file))
+			end)
+		end)
 	end)
 
-	it("does not offer the server command outside a mix project", function()
-		local bare = make_tree({ "app.ex" })
-		assert.is_false(phx.commands[1].filter(bare .. "/app.ex"))
-		vim.fn.delete(bare, "rf")
-	end)
+	describe("phx new", function()
+		local cmd
 
-	it("offers 'phx new' as a directory command", function()
-		local c = phx.directory_commands[1]
-		assert.equals("phx new", c.label)
+		before_each(function()
+			cmd = find_command(phx.directory_commands, "phx new")
+		end)
 
-		local out = c.cmd("/dir")
-		assert.equals("/dir", out.dir)
-		assert.equals("mix archive.install hex phx_new && mix phx.new .", out.command_line)
+		it("should build the phx.new command in the given directory", function()
+			local out = cmd.cmd("/dir")
+
+			assert.equals("/dir", out.dir)
+			assert.equals("mix archive.install hex phx_new && mix phx.new .", out.command_line)
+		end)
 	end)
 end)

@@ -1,45 +1,65 @@
 local playwright = require("command_runner.builtin.playwright")
 
-local function make_tree(files)
-	local root = vim.fn.tempname()
-	vim.fn.mkdir(root, "p")
-	for _, rel in ipairs(files or {}) do
-		local full = root .. "/" .. rel
-		vim.fn.mkdir(vim.fn.fnamemodify(full, ":h"), "p")
-		local fd = assert(io.open(full, "w"))
-		fd:close()
-	end
-	return root
-end
+local find_command = require("test_util").find_command
+
+local data = vim.fn.getcwd() .. "/tests/testdata/playwright"
 
 describe("command_runner.builtin.playwright", function()
-	it("detects a playwright project via playwright.config.ts", function()
-		local root = make_tree({ "playwright.config.ts", "e2e/a.spec.ts" })
-		assert.equals(root, playwright.get_project_dir(root .. "/e2e/a.spec.ts"))
-		vim.fn.delete(root, "rf")
+	describe("get_project_dir", function()
+		describe("given a project marked by playwright.config.ts", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/e2e/a.spec.ts"
+			end)
+
+			it("should return the directory containing playwright.config.ts", function()
+				assert.equals(root, playwright.get_project_dir(file))
+			end)
+		end)
 	end)
 
-	it("filter is true inside a project and false outside", function()
-		local c = playwright.commands[1]
+	describe("'Playwright current file' command", function()
+		local cmd
 
-		local proj = make_tree({ "playwright.config.ts", "e2e/a.spec.ts" })
-		assert.is_true(c.filter(proj .. "/e2e/a.spec.ts"))
+		before_each(function()
+			cmd = find_command(playwright.commands, "Playwright current file")
+		end)
 
-		local bare = make_tree({ "a.spec.ts" })
-		assert.is_false(c.filter(bare .. "/a.spec.ts"))
+		describe("given a spec file inside a project", function()
+			local root
+			local file
 
-		vim.fn.delete(proj, "rf")
-		vim.fn.delete(bare, "rf")
-	end)
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/e2e/a.spec.ts"
+			end)
 
-	it("builds the playwright test command", function()
-		local root = make_tree({ "playwright.config.ts", "e2e/a.spec.ts" })
-		local c = playwright.commands[1]
-		assert.equals("Playwright current file", c.label)
+			it("should be available", function()
+				assert.is_true(cmd.filter(file))
+			end)
 
-		local out = c.cmd(root .. "/e2e/a.spec.ts")
-		assert.equals(root, out.dir)
-		assert.equals("npx playwright test", out.command_line)
-		vim.fn.delete(root, "rf")
+			it("should build the playwright test command", function()
+				local out = cmd.cmd(file)
+
+				assert.equals(root, out.dir)
+				assert.equals("npx playwright test", out.command_line)
+			end)
+		end)
+
+		describe("given a spec file outside any project", function()
+			local file
+
+			before_each(function()
+				file = data .. "/bare/a.spec.ts"
+				assert.is_nil(playwright.get_project_dir(file))
+			end)
+
+			it("should not be available", function()
+				assert.is_false(cmd.filter(file))
+			end)
+		end)
 	end)
 end)

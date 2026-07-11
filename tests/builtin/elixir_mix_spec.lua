@@ -1,55 +1,167 @@
 local mix = require("command_runner.builtin.elixir_mix")
 
-local function make_tree(files)
-	local root = vim.fn.tempname()
-	vim.fn.mkdir(root, "p")
-	for _, rel in ipairs(files or {}) do
-		local full = root .. "/" .. rel
-		vim.fn.mkdir(vim.fn.fnamemodify(full, ":h"), "p")
-		local fd = assert(io.open(full, "w"))
-		fd:close()
-	end
-	return root
-end
+local find_command = require("test_util").find_command
+
+local data = vim.fn.getcwd() .. "/tests/testdata/elixir_mix"
 
 describe("command_runner.builtin.elixir_mix", function()
-	it("finds the project dir via mix.exs", function()
-		local root = make_tree({ "mix.exs", "lib/foo.ex" })
-		assert.equals(root, mix.get_project_dir(root .. "/lib/foo.ex"))
-		vim.fn.delete(root, "rf")
+	describe("get_project_dir", function()
+		describe("given a file inside a mix project", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/lib/foo.ex"
+			end)
+
+			it("should return the directory containing mix.exs", function()
+				assert.equals(root, mix.get_project_dir(file))
+			end)
+		end)
 	end)
 
-	it("offers compile, test and release inside a project", function()
-		local root = make_tree({ "mix.exs", "lib/foo.ex" })
-		local file = root .. "/lib/foo.ex"
+	describe("mix compile", function()
+		local cmd
 
-		local labels, results = {}, {}
-		for _, c in ipairs(mix.commands) do
-			assert.is_true(c.filter(file))
-			labels[#labels + 1] = c.label
-			results[c.label] = c.cmd(file)
-		end
+		before_each(function()
+			cmd = find_command(mix.commands, "mix compile")
+		end)
 
-		assert.same({ "mix compile", "mix test", "mix release" }, labels)
-		assert.equals(root, results["mix compile"].dir)
-		assert.equals("mix compile", results["mix compile"].command_line)
-		assert.equals("mix test", results["mix test"].command_line)
-		assert.equals("mix release", results["mix release"].command_line)
-		vim.fn.delete(root, "rf")
+		describe("given a file inside a mix project", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/lib/foo.ex"
+			end)
+
+			it("should be available", function()
+				assert.is_true(cmd.filter(file))
+			end)
+
+			it("should build the mix compile command rooted at the project", function()
+				local out = cmd.cmd(file)
+
+				assert.equals(root, out.dir)
+				assert.equals("mix compile", out.command_line)
+			end)
+		end)
+
+		describe("given a file outside any mix project", function()
+			local file
+
+			before_each(function()
+				file = data .. "/bare/foo.ex"
+
+				assert.is_nil(mix.get_project_dir(file))
+			end)
+
+			it("should not be available", function()
+				assert.is_false(cmd.filter(file))
+			end)
+		end)
 	end)
 
-	it("filters out files that are not in a mix project", function()
-		local bare = make_tree({ "foo.ex" })
-		assert.is_false(mix.commands[1].filter(bare .. "/foo.ex"))
-		vim.fn.delete(bare, "rf")
+	describe("mix test", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(mix.commands, "mix test")
+		end)
+
+		describe("given a file inside a mix project", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/lib/foo.ex"
+			end)
+
+			it("should be available", function()
+				assert.is_true(cmd.filter(file))
+			end)
+
+			it("should build the mix test command rooted at the project", function()
+				local out = cmd.cmd(file)
+
+				assert.equals(root, out.dir)
+				assert.equals("mix test", out.command_line)
+			end)
+		end)
+
+		describe("given a file outside any mix project", function()
+			local file
+
+			before_each(function()
+				file = data .. "/bare/foo.ex"
+
+				assert.is_nil(mix.get_project_dir(file))
+			end)
+
+			it("should not be available", function()
+				assert.is_false(cmd.filter(file))
+			end)
+		end)
 	end)
 
-	it("offers 'mix new' as a directory command", function()
-		local c = mix.directory_commands[1]
-		assert.equals("mix new", c.label)
+	describe("mix release", function()
+		local cmd
 
-		local out = c.cmd("/some/dir")
-		assert.equals("/some/dir", out.dir)
-		assert.equals("mix new .", out.command_line)
+		before_each(function()
+			cmd = find_command(mix.commands, "mix release")
+		end)
+
+		describe("given a file inside a mix project", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/proj"
+				file = root .. "/lib/foo.ex"
+			end)
+
+			it("should be available", function()
+				assert.is_true(cmd.filter(file))
+			end)
+
+			it("should build the mix release command rooted at the project", function()
+				local out = cmd.cmd(file)
+
+				assert.equals(root, out.dir)
+				assert.equals("mix release", out.command_line)
+			end)
+		end)
+
+		describe("given a file outside any mix project", function()
+			local file
+
+			before_each(function()
+				file = data .. "/bare/foo.ex"
+
+				assert.is_nil(mix.get_project_dir(file))
+			end)
+
+			it("should not be available", function()
+				assert.is_false(cmd.filter(file))
+			end)
+		end)
+	end)
+
+	describe("mix new", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(mix.directory_commands, "mix new")
+		end)
+
+		it("should build 'mix new .' in the given directory", function()
+			local out = cmd.cmd("/some/dir")
+
+			assert.equals("/some/dir", out.dir)
+			assert.equals("mix new .", out.command_line)
+		end)
 	end)
 end)
