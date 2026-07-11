@@ -1,6 +1,6 @@
 ---@meta command_runner types
 
----@alias BuiltinCommands "ts_vitest" | "ts_playwright" | "cs_dotnet_test" | "lua_plenary" | "elixir_mix" | "elixir_phoenix"
+---@alias BuiltinCommands string A builtin key: the basename (without `.lua`) of a module in `lua/command_runner/builtin/`, e.g. "ts_vitest".
 
 ---@class CommandRunnerOpts
 ---@field commands? table<string, CommandDescription[]> A table command descriptions by file-extension. For directory commands the special string ":directory" can be used.

@@ -1,8 +1,8 @@
-local phx = require("command_runner.builtin.elixir_phoenix")
+local phx = require("command_runner.builtin.ex_phoenix")
 
 local data = vim.fn.getcwd() .. "/tests/testdata/elixir_phoenix"
 
-local find_command = require("test_util").find_command
+local find_command = require("tests/test_util").find_command
 
 describe("command_runner.builtin.elixir_phoenix", function()
 	describe("get_project_dir", function()

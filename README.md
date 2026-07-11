@@ -65,15 +65,17 @@ require("command_runner").setup({
 ### Builtins
 
 Each builtin registers commands for one ecosystem and is enabled by default.
-See [`lua/command_runner/builtin`](./lua/command_runner/builtin) for the full
-list and the commands each one provides.
+Builtins are autoloaded from [`lua/command_runner/builtin`](./lua/command_runner/builtin);
+each file is named `<ext>_<name>.lua`, and its key is that filename without the
+`.lua` extension (e.g. `ts_playwright`, `ex_mix`). See that directory for the
+full list and the commands each one provides.
 
 Disable specific builtins by listing their keys in `builtin.disable`:
 
 ```lua
 require("command_runner").setup({
  builtin = {
-  disable = { "ts_playwright", "elixir_phoenix" },
+  disable = { "ts_playwright", "ex_phoenix" },
  },
 })
 ```

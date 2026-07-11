@@ -83,7 +83,7 @@ describe("command_runner", function()
 						},
 					},
 				})
-				assert.same({ "vitest current file", "vitest all", "Playwright current file", "tsc" }, labels("ts"))
+				assert.same({ "Playwright current file", "vitest current file", "vitest all", "tsc" }, labels("ts"))
 			end)
 		end)
 

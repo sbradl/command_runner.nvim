@@ -1,6 +1,6 @@
-local vitest = require("command_runner.builtin.vitest")
+local vitest = require("command_runner.builtin.ts_vitest")
 
-local find_command = require("test_util").find_command
+local find_command = require("tests/test_util").find_command
 
 local data = vim.fn.getcwd() .. "/tests/testdata/vitest"
 

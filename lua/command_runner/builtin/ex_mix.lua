@@ -1,5 +1,7 @@
 local M = {}
 
+M.extensions = { "ex", "exs" }
+
 M.get_project_dir = function(filename)
 	return vim.fs.root(filename, { "mix.exs" })
 end

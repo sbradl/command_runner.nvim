@@ -1,5 +1,7 @@
 local M = {}
 
+M.extensions = { "cs" }
+
 M.get_solution_dir = function(filename)
 	return vim.fs.root(filename, function(name, _)
 		local ext = vim.fs.ext(name)

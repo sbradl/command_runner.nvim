@@ -1,6 +1,6 @@
-local mix = require("command_runner.builtin.elixir_mix")
+local mix = require("command_runner.builtin.ex_mix")
 
-local find_command = require("test_util").find_command
+local find_command = require("tests/test_util").find_command
 
 local data = vim.fn.getcwd() .. "/tests/testdata/elixir_mix"
 

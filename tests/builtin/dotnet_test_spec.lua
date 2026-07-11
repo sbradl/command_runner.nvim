@@ -1,4 +1,4 @@
-local dotnet = require("command_runner.builtin.dotnet_test")
+local dotnet = require("command_runner.builtin.cs_dotnet_test")
 
 local data = vim.fn.getcwd() .. "/tests/testdata/dotnet_test"
 
@@ -8,7 +8,7 @@ local function buf_with(lines)
 	return buf
 end
 
-local find_command = require("test_util").find_command
+local find_command = require("tests/test_util").find_command
 
 describe("command_runner.builtin.dotnet_test", function()
 	describe("get_solution_dir", function()

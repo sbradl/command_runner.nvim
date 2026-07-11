@@ -1,5 +1,7 @@
 local M = {}
 
+M.extensions = { "ts" }
+
 M.get_project_dir = function(filename)
 	return vim.fs.root(filename, { "vitest.config.ts", "vitest.config.js", "package.json" })
 end

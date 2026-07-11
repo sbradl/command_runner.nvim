@@ -1,5 +1,7 @@
 local M = {}
 
+M.extensions = { "lua" }
+
 local U = require("command_runner.util")
 
 M.get_project_dir = function(filename)

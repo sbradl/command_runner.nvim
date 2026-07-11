@@ -3,7 +3,7 @@ local plenary = require("command_runner.builtin.lua_plenary")
 local repo = vim.fn.getcwd()
 local fixture = repo .. "/tests/testdata/lua_plenary/lua/a.lua"
 
-local find_command = require("test_util").find_command
+local find_command = require("tests/test_util").find_command
 
 describe("command_runner.builtin.lua_plenary", function()
 	describe("get_project_dir", function()

@@ -14,42 +14,35 @@ M._register = function(ext, command_list)
 	end
 end
 
+local builtin_dir = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2)) .. "/command_runner/builtin"
+
 ---@param disabled table<BuiltinCommands, boolean> Set of builtin keys to skip.
 local function register_builtin_commands(disabled)
-	if not disabled.ts_vitest then
-		vim.notify("enable ts_vitest", vim.log.levels.DEBUG)
-		M._register("ts", require("command_runner.builtin.vitest").commands)
+	local keys = {}
+	for name, type in vim.fs.dir(builtin_dir) do
+		if type == "file" then
+			local key = name:match("^(.+)%.lua$")
+			if key then
+				table.insert(keys, key)
+			end
+		end
 	end
+	table.sort(keys)
 
-	if not disabled.ts_playwright then
-		vim.notify("enable ts_playwright", vim.log.levels.DEBUG)
-		M._register("ts", require("command_runner.builtin.playwright").commands)
-	end
+	for _, key in ipairs(keys) do
+		if not disabled[key] then
+			local builtin = require("command_runner.builtin." .. key)
 
-	if not disabled.cs_dotnet_test then
-		vim.notify("enable cs_dotnet_test", vim.log.levels.DEBUG)
-		M._register("cs", require("command_runner.builtin.dotnet_test").commands)
-	end
+			if builtin.commands then
+				for _, ext in ipairs(builtin.extensions) do
+					M._register(ext, builtin.commands)
+				end
+			end
 
-	if not disabled.lua_plenary then
-		vim.notify("enable lua_plenary", vim.log.levels.DEBUG)
-		M._register("lua", require("command_runner.builtin.lua_plenary").commands)
-	end
-
-	if not disabled.elixir_mix then
-		vim.notify("enable elixir_mix", vim.log.levels.DEBUG)
-		local elixir = require("command_runner.builtin.elixir_mix")
-		M._register(":directory", elixir.directory_commands)
-		M._register("ex", elixir.commands)
-		M._register("exs", elixir.commands)
-	end
-
-	if not disabled.elixir_phoenix then
-		vim.notify("enable elixir_phoenix", vim.log.levels.DEBUG)
-		local elixir_phoenix = require("command_runner.builtin.elixir_phoenix")
-		M._register(":directory", elixir_phoenix.directory_commands)
-		M._register("ex", elixir_phoenix.commands)
-		M._register("exs", elixir_phoenix.commands)
+			if builtin.directory_commands then
+				M._register(":directory", builtin.directory_commands)
+			end
+		end
 	end
 end
 
@@ -60,8 +53,6 @@ M.setup = function(opts)
 
 	M._commands = {}
 
-	-- `builtin = false` disables every builtin at once; otherwise builtins are
-	-- opt-out via `builtin.disable`, a list of the keys to skip.
 	if opts.builtin ~= false then
 		local disabled = {}
 		for _, key in ipairs((opts.builtin or {}).disable or {}) do

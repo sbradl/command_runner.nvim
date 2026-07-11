@@ -1,6 +1,6 @@
-local playwright = require("command_runner.builtin.playwright")
+local playwright = require("command_runner.builtin.ts_playwright")
 
-local find_command = require("test_util").find_command
+local find_command = require("tests/test_util").find_command
 
 local data = vim.fn.getcwd() .. "/tests/testdata/playwright"
 
