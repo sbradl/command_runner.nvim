@@ -14,12 +14,10 @@ M._register = function(ext, command_list)
 	end
 end
 
-local builtin_dir = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2)) .. "/command_runner/builtin"
-
 ---@param disabled table<BuiltinCommands, boolean> Set of builtin keys to skip.
 local function register_builtin_commands(disabled)
 	local keys = {}
-	for name, type in vim.fs.dir(builtin_dir) do
+	for name, type in vim.fs.dir("lua/command_runner/builtin") do
 		if type == "file" then
 			local key = name:match("^(.+)%.lua$")
 			if key then
@@ -70,12 +68,9 @@ M.setup = function(opts)
 	local project_local_nvim_config = vim.fs.root(0, ".nvim")
 
 	if project_local_nvim_config then
-		vim.notify("Found project level nvim config", vim.log.levels.DEBUG)
 		local project_local_commands_file = project_local_nvim_config .. "/.nvim/command_runner.lua"
-		vim.notify("Searching " .. project_local_commands_file, vim.log.levels.DEBUG)
 
 		if vim.fn.filereadable(project_local_commands_file) == 1 then
-			vim.notify("Found project level command config", vim.log.levels.DEBUG)
 			local chunk, err = loadfile(project_local_commands_file)
 			if not chunk then
 				vim.notify(
