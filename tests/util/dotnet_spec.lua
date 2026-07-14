@@ -84,7 +84,7 @@ describe("command_runner.util.dotnet", function()
 			end)
 
 			it("should return the declared namespace", function()
-				assert.equals("My.App.Tests", dotnet.get_namespace(nil, buf))
+				assert.equals("My.App.Tests", dotnet.get_namespace(buf))
 			end)
 		end)
 
@@ -100,7 +100,7 @@ describe("command_runner.util.dotnet", function()
 			end)
 
 			it("should return nil", function()
-				assert.is_nil(dotnet.get_namespace(nil, buf))
+				assert.is_nil(dotnet.get_namespace(buf))
 			end)
 		end)
 	end)

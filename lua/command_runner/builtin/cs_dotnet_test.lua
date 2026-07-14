@@ -9,24 +9,34 @@ M.commands = {
 	{
 		label = "dotnet test current file",
 		cmd = function(filename)
+			local project_file = dotnet.get_project_file(filename)
+
 			return {
 				dir = dotnet.get_solution_dir(filename),
-				command_line = "dotnet test --filter ClassName~" .. vim.fn.fnamemodify(filename, ":t:r"),
+				command_line = "dotnet test --no-restore --filter ClassName~"
+					.. vim.fn.fnamemodify(filename, ":t:r")
+					.. " "
+					.. project_file,
 			}
 		end,
 	},
 	{
 		label = "dotnet test current namespace",
 		cmd = function(filename, buf)
+			local project_file = dotnet.get_project_file(filename)
+
 			return {
 				dir = dotnet.get_solution_dir(filename),
-				command_line = "dotnet test --filter FullyQualifiedName~" .. dotnet.get_namespace(filename, buf),
+				command_line = "dotnet test --no-restore --filter FullyQualifiedName~"
+					.. dotnet.get_namespace(buf)
+					.. " "
+					.. project_file,
 			}
 		end,
 	},
 	{
 		label = "dotnet test solution",
-		cmd = function(filename, buf)
+		cmd = function(filename, _)
 			return {
 				dir = dotnet.get_solution_dir(filename),
 				command_line = "dotnet test",

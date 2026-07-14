@@ -8,6 +8,26 @@ local function buf_with(lines)
 	return buf
 end
 
+local function contains(s, needle)
+	return string.find(s, needle, 1, true) ~= nil
+end
+
+local function assert_no_restore(cmd)
+	assert.equals(true, contains(cmd, " --no-restore"))
+end
+
+local function assert_filter(cmd, expected_filter)
+	assert.equals(true, contains(cmd, " --filter " .. expected_filter))
+end
+
+local function assert_project(cmd, project_file)
+	assert.equals(true, vim.endswith(cmd, " " .. project_file))
+end
+
+local function assert_base_command(cmd, expected_base_command)
+	assert.equals(true, vim.startswith(cmd, expected_base_command))
+end
+
 local find_command = require("tests/test_util").find_command
 
 describe("command_runner.builtin.dotnet_test", function()
@@ -29,8 +49,13 @@ describe("command_runner.builtin.dotnet_test", function()
 
 			it("should filter by the class name derived from the file", function()
 				local out = cmd.cmd(file)
+				local command_line = out.command_line
 				assert.equals(root, out.dir)
-				assert.equals("dotnet test --filter ClassName~FooTests", out.command_line)
+
+				assert_base_command(command_line, "dotnet test")
+				assert_no_restore(command_line)
+				assert_filter(command_line, "ClassName~FooTests")
+				assert_project(command_line, "proj/proj.csproj")
 			end)
 		end)
 	end)
@@ -59,8 +84,13 @@ describe("command_runner.builtin.dotnet_test", function()
 
 			it("should filter by the fully-qualified namespace", function()
 				local out = cmd.cmd(file, buf)
+				local command_line = out.command_line
 				assert.equals(root, out.dir)
-				assert.equals("dotnet test --filter FullyQualifiedName~My.App.Tests", out.command_line)
+
+				assert_base_command(command_line, "dotnet test")
+				assert_no_restore(command_line)
+				assert_filter(command_line, "FullyQualifiedName~My.App.Tests")
+				assert_project(command_line, "proj/proj.csproj")
 			end)
 		end)
 	end)

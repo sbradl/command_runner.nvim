@@ -21,7 +21,7 @@ M.get_project_file = function(filename)
 	return vim.fs.joinpath(project_dir, vim.fs.basename(project_dir) .. ".csproj")
 end
 
-M.get_namespace = function(_, buf)
+M.get_namespace = function(buf)
 	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
 	for _, line in ipairs(lines) do
