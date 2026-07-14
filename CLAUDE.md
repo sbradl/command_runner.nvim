@@ -11,18 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Run the test suite (this is exactly what CI runs):
 
 ```sh
-make test
-```
-
-Run a single test file:
-
-```sh
-make test FILE=tests/builtin/vitest_spec.lua
+nvim --headless --noplugin -u scripts/minimal_init.vim \
+  -c "PlenaryBustedDirectory tests/ { minimal_init = './scripts/minimal_init.vim' }"
 ```
 
 Tests use [plenary.nvim](https://github.com/nvim-lua/plenary.nvim), which must be checked out at `../plenary.nvim` (a sibling of this repo) so `scripts/minimal_init.vim` can find it on the runtimepath. Specs live in `tests/**/*_spec.lua`.
 
-**Always run tests through `make`** (or otherwise forward `scripts/minimal_init.vim` as plenary's `minimal_init`). `minimal_init.vim` is the single source of test setup: it puts plenary on the runtimepath and adds `tests/` to `package.path` so shared helpers in `tests/test_util.lua` are requirable. Each spec runs in a fresh child nvim, and plenary only passes `minimal_init` down when it is given one — so a bare `PlenaryBustedFile <spec>` or `PlenaryBustedDirectory .` (no `minimal_init`) spawns children without that setup, and specs that `require("test_util")` (the `builtin/*` ones) error out and get *silently* dropped from the aggregate output. The `Makefile` forwards `minimal_init` for both whole-suite and single-file (`FILE=`) runs, which is why it works uniformly. For an editor test runner (e.g. neotest-plenary), point its `minimal_init` at `scripts/minimal_init.vim` for the same reason.
+**Always forward `scripts/minimal_init.vim` as plenary's `minimal_init`** (the `{ minimal_init = './scripts/minimal_init.vim' }` argument above). `minimal_init.vim` is the single source of test setup: it puts plenary on the runtimepath and adds `tests/` to `package.path` so shared helpers in `tests/test_util.lua` are requirable. Each spec runs in a fresh child nvim, and plenary only passes `minimal_init` down when it is given one — so a bare `PlenaryBustedDirectory tests/` (no `minimal_init`) spawns children without that setup, and specs that `require("test_util")` (the `builtin/*` ones) error out and get *silently* dropped from the aggregate output. For an editor test runner (e.g. neotest-plenary), point its `minimal_init` at `scripts/minimal_init.vim` for the same reason.
 
 Specs run headless with no terminal available, so they mock at the boundaries: `require("terminal")` is preloaded into `package.loaded` before requiring `command_runner.commands`; filesystem-dependent helpers are exercised against real temp trees built with `vim.fn.tempname()` + `vim.fn.mkdir`; and `vim.ui.select` / `vim.defer_fn` are replaced to drive selection and run the deferred terminal write synchronously.
 
