@@ -49,8 +49,24 @@ describe("command_runner.util.dotnet", function()
 				file = root .. "/proj/FooTests.cs"
 			end)
 
-			it("should return the directory containing the .csproj", function()
-				assert.equals(root .. "/proj", dotnet.get_project_dir(file))
+			it("should return the directory containing the .csproj relative to the solution", function()
+				assert.equals("proj", dotnet.get_project_dir(file))
+			end)
+		end)
+	end)
+
+	describe("get_project_file", function()
+		describe("given a project marked by .csproj", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should return path to csproj relative to solution directory", function()
+				assert.equals("proj/proj.csproj", dotnet.get_project_file(file))
 			end)
 		end)
 	end)

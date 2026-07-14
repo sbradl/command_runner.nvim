@@ -8,9 +8,17 @@ M.get_solution_dir = function(filename)
 end
 
 M.get_project_dir = function(filename)
-	return vim.fs.root(filename, function(name, _)
-		return vim.fs.ext(name) == "csproj"
-	end)
+	return vim.fs.relpath(
+		M.get_solution_dir(filename),
+		assert(vim.fs.root(filename, function(name, _)
+			return vim.fs.ext(name) == "csproj"
+		end))
+	)
+end
+
+M.get_project_file = function(filename)
+	local project_dir = M.get_project_dir(filename)
+	return vim.fs.joinpath(project_dir, vim.fs.basename(project_dir) .. ".csproj")
 end
 
 M.get_namespace = function(_, buf)
