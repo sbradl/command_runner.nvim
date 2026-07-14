@@ -48,7 +48,16 @@ describe("command_runner", function()
 			it("should let builtins be disabled via opts.builtin.disable", function()
 				cr.setup({ builtin = { disable = { "ts_vitest" } } })
 
-				assert.same({ "Playwright current file" }, labels("ts"))
+				local ts_labels = labels("ts")
+				local vitest = require("command_runner.builtin.ts_vitest")
+				local playwright = require("command_runner.builtin.ts_playwright")
+
+				for _, cmd in ipairs(vitest.commands) do
+					assert.is_false(vim.tbl_contains(ts_labels, cmd.label), cmd.label .. " should be disabled")
+				end
+				for _, cmd in ipairs(playwright.commands) do
+					assert.is_true(vim.tbl_contains(ts_labels, cmd.label), cmd.label .. " should remain registered")
+				end
 			end)
 
 			it("should disable all builtins when opts.builtin is false", function()
@@ -83,7 +92,10 @@ describe("command_runner", function()
 						},
 					},
 				})
-				assert.same({ "Playwright current file", "vitest current file", "vitest all", "tsc" }, labels("ts"))
+				assert.same(
+				{ "npm run build", "Playwright current file", "vitest current file", "vitest all", "tsc" },
+				labels("ts")
+			)
 			end)
 		end)
 
