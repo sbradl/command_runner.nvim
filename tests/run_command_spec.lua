@@ -200,6 +200,35 @@ describe("command_runner.run_command", function()
 
 			assert.same({ "always", "yes" }, offered)
 		end)
+
+		it("should offer the commands in alphabetical order", function()
+			register({
+				ts = {
+					{
+						label = "run tests",
+						cmd = function()
+							return {}
+						end,
+					},
+					{
+						label = "build",
+						cmd = function()
+							return {}
+						end,
+					},
+					{
+						label = "lint",
+						cmd = function()
+							return {}
+						end,
+					},
+				},
+			})
+
+			cr.run_command()
+
+			assert.same({ "build", "lint", "run tests" }, offered)
+		end)
 	end)
 
 	describe("given the current buffer has no extension", function()

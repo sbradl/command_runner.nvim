@@ -31,6 +31,8 @@ M.choose_and_run_command = function(commands)
 		end
 	end
 
+	table.sort(options)
+
 	vim.ui.select(options, {
 		prompt = name,
 	}, function(selected_label)
