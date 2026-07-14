@@ -40,4 +40,15 @@ M.find_root = function(filename, marker)
 	return nil
 end
 
+--- Build a Command that opens `filepath` in the current window via `:edit`.
+---
+---@param filepath string
+---@return Command
+M.edit_file = function(filepath)
+	return {
+		type = "nvim",
+		command_line = "edit " .. vim.fn.fnameescape(filepath),
+	}
+end
+
 return M

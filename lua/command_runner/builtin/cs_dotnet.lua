@@ -1,4 +1,5 @@
 local dotnet = require("command_runner.util.dotnet")
+local util = require("command_runner.util")
 
 local M = {}
 
@@ -9,19 +10,13 @@ M.commands = {
 	{
 		label = "open solution file",
 		cmd = function(filename, _)
-			return {
-				type = "nvim",
-				command_line = "edit " .. vim.fn.fnameescape(dotnet.get_solution_file(filename)),
-			}
+			return util.edit_file(dotnet.get_solution_file(filename))
 		end,
 	},
 	{
 		label = "open project file",
 		cmd = function(filename, _)
-			return {
-				type = "nvim",
-				command_line = "edit " .. vim.fn.fnameescape(dotnet.get_project_file_abs(filename)),
-			}
+			return util.edit_file(dotnet.get_project_file_abs(filename))
 		end,
 	},
 }
