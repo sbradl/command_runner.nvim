@@ -1,9 +1,11 @@
+local U = require("command_runner.util")
+
 local M = {}
 
 M.extensions = { "ex", "exs" }
 
 M.get_project_dir = function(filename)
-	return vim.fs.root(filename, { "mix.exs" })
+	return U.find_root(filename, { "mix.exs" })
 end
 
 local function is_elixir_project(filename)

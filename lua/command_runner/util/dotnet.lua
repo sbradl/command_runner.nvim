@@ -1,7 +1,9 @@
+local U = require("command_runner.util")
+
 local M = {}
 
 M.get_solution_dir = function(filename)
-	return vim.fs.root(filename, function(name, _)
+	return U.find_root(filename, function(name, _)
 		local ext = vim.fs.ext(name)
 		return ext == "sln" or ext == "slnx"
 	end)
@@ -10,7 +12,7 @@ end
 M.get_project_dir = function(filename)
 	return vim.fs.relpath(
 		M.get_solution_dir(filename),
-		assert(vim.fs.root(filename, function(name, _)
+		assert(U.find_root(filename, function(name, _)
 			return vim.fs.ext(name) == "csproj"
 		end))
 	)

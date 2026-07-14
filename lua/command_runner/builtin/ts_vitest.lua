@@ -1,9 +1,11 @@
+local U = require("command_runner.util")
+
 local M = {}
 
 M.extensions = { "ts" }
 
 M.get_project_dir = function(filename)
-	return vim.fs.root(filename, { "vitest.config.ts", "vitest.config.js", "package.json" })
+	return U.find_root(filename, { "vitest.config.ts", "vitest.config.js", "package.json" })
 end
 
 ---@type CommandDescription[]
