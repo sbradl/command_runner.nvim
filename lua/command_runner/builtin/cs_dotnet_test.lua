@@ -7,14 +7,14 @@ M.extensions = { "cs" }
 ---@type CommandDescription[]
 M.commands = {
 	{
-		label = "dotnet test current file",
-		cmd = function(filename)
+		label = "dotnet test current class",
+		cmd = function(filename, buf)
 			local project_file = dotnet.get_project_file(filename)
 
 			return {
 				dir = dotnet.get_solution_dir(filename),
 				command_line = "dotnet test --no-restore --filter ClassName~"
-					.. vim.fn.fnamemodify(filename, ":t:r")
+					.. dotnet.get_class(buf)
 					.. " "
 					.. project_file,
 			}

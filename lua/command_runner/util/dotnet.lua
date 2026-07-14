@@ -34,4 +34,17 @@ M.get_namespace = function(buf)
 	return nil
 end
 
+M.get_class = function(buf)
+	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+	for _, line in ipairs(lines) do
+		local class = line:match("%f[%w]class%s+([%w_]+)")
+		if class then
+			return class
+		end
+	end
+
+	return nil
+end
+
 return M

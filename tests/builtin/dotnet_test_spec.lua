@@ -8,6 +8,10 @@ local function buf_with(lines)
 	return buf
 end
 
+local function buf_from_file(path)
+	return buf_with(vim.fn.readfile(path))
+end
+
 local function contains(s, needle)
 	return string.find(s, needle, 1, true) ~= nil
 end
@@ -31,24 +35,30 @@ end
 local find_command = require("tests/test_util").find_command
 
 describe("command_runner.builtin.dotnet_test", function()
-	describe("'dotnet test current file' command", function()
+	describe("'dotnet test current class' command", function()
 		local cmd
 
 		before_each(function()
-			cmd = find_command(dotnet.commands, "dotnet test current file")
+			cmd = find_command(dotnet.commands, "dotnet test current class")
 		end)
 
 		describe("given a test file inside a solution", function()
 			local root
 			local file
+			local buf
 
 			before_each(function()
 				root = data .. "/classic_solution"
 				file = root .. "/proj/FooTests.cs"
+				buf = buf_with({ "class FooTests {}" })
 			end)
 
-			it("should filter by the class name derived from the file", function()
-				local out = cmd.cmd(file)
+			after_each(function()
+				vim.api.nvim_buf_delete(buf, { force = true })
+			end)
+
+			it("should filter by the class name declared in the buffer", function()
+				local out = cmd.cmd(file, buf)
 				local command_line = out.command_line
 				assert.equals(root, out.dir)
 
