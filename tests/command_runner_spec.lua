@@ -93,7 +93,7 @@ describe("command_runner", function()
 					},
 				})
 				assert.same(
-				{ "npm run build", "Playwright current file", "vitest current file", "vitest all", "tsc" },
+				{ "npm run build", "edit package.json", "Playwright current file", "vitest current file", "vitest all", "tsc" },
 				labels("ts")
 			)
 			end)
