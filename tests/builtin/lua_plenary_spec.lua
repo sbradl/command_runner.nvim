@@ -21,6 +21,40 @@ describe("command_runner.builtin.lua_plenary", function()
 		end)
 	end)
 
+	describe("Plenary test file", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(plenary.commands, "Plenary test file")
+		end)
+
+		describe("given a plenary spec file", function()
+			local file
+
+			before_each(function()
+				-- a real spec file: this very spec
+				file = repo .. "/tests/builtin/lua_plenary_spec.lua"
+			end)
+
+			it("should be available", function()
+				assert.is_true(cmd.filter(file))
+			end)
+
+			it("should build a PlenaryBustedFile nvim command for the file", function()
+				local out = cmd.cmd(file)
+
+				assert.equals("nvim", out.type)
+				assert.equals("PlenaryBustedFile " .. file, out.command_line)
+			end)
+		end)
+
+		describe("given a lua file that is not a spec", function()
+			it("should not be available", function()
+				assert.is_false(cmd.filter(fixture))
+			end)
+		end)
+	end)
+
 	describe("Plenary test all", function()
 		local cmd
 
