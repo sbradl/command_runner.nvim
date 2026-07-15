@@ -2,6 +2,11 @@ local M = {}
 
 M._commands = {}
 
+M._opts = {
+	autoclose_on_success = true,
+	autoclose_delay_in_seconds = 3,
+}
+
 ---@param ext string
 ---@param command_list CommandDescription[]
 M._register = function(ext, command_list)
@@ -52,6 +57,11 @@ M.setup = function(opts)
 	opts = opts or {}
 
 	M._commands = {}
+
+	M._opts = {
+		autoclose_on_success = opts.autoclose_on_success ~= false,
+		autoclose_delay_in_seconds = opts.autoclose_delay_in_seconds or 3,
+	}
 
 	if opts.builtin ~= false then
 		local disabled = {}
@@ -114,7 +124,7 @@ M.get_commands = function(ext)
 end
 
 M.run_command = function()
-	require("command_runner.commands").choose_and_run_command(M._commands)
+	require("command_runner.commands").choose_and_run_command(M._commands, M._opts)
 end
 
 return M

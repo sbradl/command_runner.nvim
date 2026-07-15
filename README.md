@@ -14,7 +14,9 @@ The selected command will be executed when selected.
 
 ## Requirements
 
-- Neovim (with `vim.fs`, i.e. 0.8+).
+- Neovim (with `vim.fs`, i.e. 0.8+). The default [autoclose](#autoclose)
+  behavior additionally relies on Neovim's default `TermClose` autocmd (0.11+);
+  on older versions the terminal buffer lingers after a successful command.
 - [terminal.nvim](https://github.com/sbradl/terminal.nvim) — a runtime dependency, but only for commands executed in a terminal (`type = "terminal"`, the default). Commands with `type = "nvim"` do not need it.
 
 ## Installation
@@ -59,8 +61,27 @@ require("command_runner").setup({
  builtin = {
   disable = { "ts_playwright" },
  },
+
+ -- Close the terminal automatically when a command exits successfully
+ -- (defaults shown).
+ autoclose_on_success = true,
+ autoclose_delay_in_seconds = 3,
 })
 ```
+
+### Autoclose
+
+With `autoclose_on_success` enabled (the default), terminal commands are sent
+as `<command_line> && sleep <delay> && exit`: on success the shell exits after
+`autoclose_delay_in_seconds` and Neovim deletes the terminal buffer; on failure
+the shell stays open with the output. Pressing `Ctrl-C` during the delay
+cancels the pending `exit` and keeps the terminal. A delay of `0` closes
+immediately.
+
+This relies on Neovim's default `TermClose` autocmd (Neovim >= 0.11) and a
+shell where the `&&` chain is valid — any POSIX shell or PowerShell 7+ (where
+`sleep` aliases `Start-Sleep`). Notably `cmd.exe` and Windows PowerShell 5.1
+are not supported; set `autoclose_on_success = false` there.
 
 ### Builtins
 

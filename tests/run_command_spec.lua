@@ -12,11 +12,15 @@ describe("command_runner.run_command", function()
 		tbl[key] = fn
 	end
 
-	local function register(commands)
-		cr.setup({
+	local function register(commands, opts)
+		local setup_opts = {
 			builtin = false,
 			commands = commands,
-		})
+		}
+		for k, v in pairs(opts or {}) do
+			setup_opts[k] = v
+		end
+		cr.setup(setup_opts)
 	end
 
 	-- Make `basename` the current buffer. A per-test counter keeps buffer names
@@ -97,7 +101,7 @@ describe("command_runner.run_command", function()
 			cr.run_command()
 
 			assert.same({ "/proj" }, terminal_mock.calls)
-			assert.same({ { id = 4242, data = "npx vitest\n" } }, sent)
+			assert.same({ { id = 4242, data = "npx vitest && sleep 3 && exit\n" } }, sent)
 		end)
 
 		it("should default to terminal execution when the command type is omitted", function()
@@ -115,7 +119,44 @@ describe("command_runner.run_command", function()
 			cr.run_command()
 
 			assert.same({ "/proj" }, terminal_mock.calls)
-			assert.same({ { id = 4242, data = "ls\n" } }, sent)
+			assert.same({ { id = 4242, data = "ls && sleep 3 && exit\n" } }, sent)
+		end)
+
+		describe("autoclose", function()
+			local commands = {
+				ts = {
+					{
+						label = "run",
+						cmd = function()
+							return { dir = "/proj", command_line = "make" }
+						end,
+					},
+				},
+			}
+
+			it("should not append anything when autoclose_on_success is false", function()
+				register(commands, { autoclose_on_success = false })
+
+				cr.run_command()
+
+				assert.same({ { id = 4242, data = "make\n" } }, sent)
+			end)
+
+			it("should exit without a sleep when the delay is 0", function()
+				register(commands, { autoclose_delay_in_seconds = 0 })
+
+				cr.run_command()
+
+				assert.same({ { id = 4242, data = "make && exit\n" } }, sent)
+			end)
+
+			it("should sleep for the configured delay", function()
+				register(commands, { autoclose_delay_in_seconds = 10 })
+
+				cr.run_command()
+
+				assert.same({ { id = 4242, data = "make && sleep 10 && exit\n" } }, sent)
+			end)
 		end)
 	end)
 
