@@ -12,6 +12,16 @@ Based on the current file a selection of commands is displayed.
 The selected command will be executed when selected.
 ![image](./screenshot_commands_executed.png)
 
+### Rerun
+
+After a command has been executed once, the picker offers a `Rerun: <label>`
+entry at the top of the list. Rerun is a snapshot: it repeats the command
+exactly as it ran before — same command line, same directory — even if the
+current buffer has changed in the meantime (e.g. tests that ran in project A
+are rerun in project A, even from a file in project B). The entry is offered
+regardless of the current file's extension and is kept for the duration of the
+Neovim session; selecting a different command replaces the snapshot.
+
 ## Requirements
 
 - Neovim (with `vim.fs`, i.e. 0.8+). The default [autoclose](#autoclose)
