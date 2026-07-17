@@ -45,3 +45,17 @@ Internal modules are required by their full path (`require("command_runner.<name
 1. Create `lua/command_runner/builtin/<name>.lua` exporting `M.commands` and `M.extensions` (and `M.directory_commands` if it registers under `":directory"`). The filename becomes the builtin's key (used in `opts.builtin.disable`).
 
 That's it — `register_builtin_commands` discovers the module automatically by scanning the `builtin/` directory, so there is no registry to wire into and no type to update.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues (gh CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
