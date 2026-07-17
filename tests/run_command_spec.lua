@@ -335,6 +335,96 @@ describe("command_runner.run_command", function()
 		end)
 	end)
 
+	describe("given a command was run before", function()
+		local offered
+		local sent
+		local select_response
+
+		before_each(function()
+			local buf = set_current_file("a.ts")
+			vim.api.nvim_buf_set_var(buf, "terminal_job_id", 4242)
+
+			sent = {}
+			replace(vim.api, "nvim_chan_send", function(id, data)
+				table.insert(sent, { id = id, data = data })
+			end)
+			replace(vim.ui, "select", function(items, _, cb)
+				offered = items
+				cb(select_response)
+			end)
+
+			register({
+				ts = {
+					{
+						label = "run",
+						cmd = function()
+							return { dir = "/proj", command_line = "make" }
+						end,
+					},
+					{
+						label = "build",
+						cmd = function()
+							return { dir = "/elsewhere", command_line = "build" }
+						end,
+					},
+				},
+			})
+
+			select_response = "run"
+			cr.run_command()
+			assert.same({ "/proj" }, terminal_mock.calls)
+		end)
+
+		it("should prepend a rerun entry before the sorted commands", function()
+			select_response = nil
+			cr.run_command()
+
+			assert.same({ "Rerun: run", "build", "run" }, offered)
+		end)
+
+		it("should offer the rerun entry in any buffer, even without registered commands", function()
+			set_current_file("b.py")
+
+			select_response = nil
+			cr.run_command()
+
+			assert.same({ "Rerun: run" }, offered)
+		end)
+
+		it("should offer the rerun entry even when every command is filtered out", function()
+			register({
+				ts = {
+					{
+						label = "never",
+						filter = function()
+							return false
+						end,
+						cmd = function()
+							return {}
+						end,
+					},
+				},
+			})
+			set_current_file("c.ts")
+
+			select_response = nil
+			cr.run_command()
+
+			assert.same({ "Rerun: run" }, offered)
+		end)
+
+		it("should replay the stored command verbatim when selected", function()
+			local buf2 = set_current_file("b.py")
+			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
+
+			select_response = "Rerun: run"
+			cr.run_command()
+
+			assert.same({ "/proj", "/proj" }, terminal_mock.calls)
+			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
+		end)
+	end)
+
 	describe("given the user cancels the selection", function()
 		before_each(function()
 			set_current_file("a.ts")

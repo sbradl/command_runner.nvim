@@ -42,6 +42,12 @@ M.choose_and_run_command = function(commands, opts)
 
 	table.sort(options)
 
+	if M._rerun then
+		-- Rerun stays on top, in front of the sorted labels.
+		table.insert(options, 1, M._rerun.label)
+		choices = vim.list_extend({ M._rerun }, choices)
+	end
+
 	vim.ui.select(options, {
 		prompt = name,
 	}, function(selected_label)
@@ -49,17 +55,26 @@ M.choose_and_run_command = function(commands, opts)
 			return
 		end
 
-		local selected_cmd = nil
+		local selected_choice = nil
 		for _, choice in ipairs(choices) do
 			if choice.label == selected_label then
-				selected_cmd = choice.cmd
+				selected_choice = choice
 				break
 			end
 		end
 
-		if selected_cmd and type(selected_cmd) == "function" then
-			local command_description = selected_cmd(name, buf)
+		if selected_choice and type(selected_choice.cmd) == "function" then
+			local command_description = selected_choice.cmd(name, buf)
 			local command_type = command_description.type or "terminal"
+
+			if selected_choice ~= M._rerun then
+				M._rerun = {
+					label = "Rerun: " .. selected_label,
+					cmd = function()
+						return command_description
+					end,
+				}
+			end
 
 			if command_type == "terminal" then
 				M.open_terminal_and_run_command(command_description, opts)
