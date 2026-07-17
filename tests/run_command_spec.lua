@@ -423,6 +423,39 @@ describe("command_runner.run_command", function()
 			assert.same({ "/proj", "/proj" }, terminal_mock.calls)
 			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
 		end)
+
+		it("should replay the stored command via rerun_command without showing the picker", function()
+			local buf2 = set_current_file("b.py")
+			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
+			replace(vim.ui, "select", function()
+				error("the picker should not be shown on rerun_command")
+			end)
+
+			cr.rerun_command()
+
+			assert.same({ "/proj", "/proj" }, terminal_mock.calls)
+			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
+		end)
+	end)
+
+	describe("given no command was run before", function()
+		it("should warn and run nothing when rerun_command is called", function()
+			set_current_file("a.ts")
+			register({})
+
+			local notified
+			replace(vim, "notify", function(msg, level)
+				notified = { msg = msg, level = level }
+			end)
+			replace(vim.ui, "select", function()
+				error("the picker should not be shown on rerun_command")
+			end)
+
+			cr.rerun_command()
+
+			assert.equals(0, #terminal_mock.calls)
+			assert.equals(vim.log.levels.WARN, notified.level)
+		end)
 	end)
 
 	describe("given the user cancels the selection", function()

@@ -127,4 +127,9 @@ M.run_command = function()
 	require("command_runner.commands").choose_and_run_command(M._commands, M._opts)
 end
 
+--- Rerun the last executed command without showing the picker.
+M.rerun_command = function()
+	require("command_runner.commands").rerun_command(M._opts)
+end
+
 return M

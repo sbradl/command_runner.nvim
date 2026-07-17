@@ -22,6 +22,13 @@ are rerun in project A, even from a file in project B). The entry is offered
 regardless of the current file's extension and is kept for the duration of the
 Neovim session; selecting a different command replaces the snapshot.
 
+`require("command_runner").rerun_command()` replays the snapshot directly,
+without showing the picker (it warns when no command has been run yet):
+
+```lua
+vim.keymap.set("n", "<leader>rr", require("command_runner").rerun_command, { desc = "Rerun last command" })
+```
+
 ## Requirements
 
 - Neovim (with `vim.fs`, i.e. 0.8+). The default [autoclose](#autoclose)

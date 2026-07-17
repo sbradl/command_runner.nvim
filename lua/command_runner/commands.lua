@@ -22,6 +22,25 @@ M.open_terminal_and_run_command = function(command, opts)
 	end, 50)
 end
 
+local function execute(command, opts)
+	local command_type = command.type or "terminal"
+
+	if command_type == "terminal" then
+		M.open_terminal_and_run_command(command, opts)
+	elseif command_type == "nvim" then
+		vim.cmd(command.command_line)
+	end
+end
+
+M.rerun_command = function(opts)
+	if not M._rerun then
+		vim.notify("command_runner: no command to rerun", vim.log.levels.WARN)
+		return
+	end
+
+	execute(M._rerun.cmd(), opts)
+end
+
 M.choose_and_run_command = function(commands, opts)
 	local buf = vim.api.nvim_get_current_buf()
 	local name = vim.api.nvim_buf_get_name(buf)
@@ -65,7 +84,6 @@ M.choose_and_run_command = function(commands, opts)
 
 		if selected_choice and type(selected_choice.cmd) == "function" then
 			local command_description = selected_choice.cmd(name, buf)
-			local command_type = command_description.type or "terminal"
 
 			if selected_choice ~= M._rerun then
 				M._rerun = {
@@ -76,11 +94,7 @@ M.choose_and_run_command = function(commands, opts)
 				}
 			end
 
-			if command_type == "terminal" then
-				M.open_terminal_and_run_command(command_description, opts)
-			elseif command_type == "nvim" then
-				vim.cmd(command_description.command_line)
-			end
+			execute(command_description, opts)
 		end
 	end)
 end
