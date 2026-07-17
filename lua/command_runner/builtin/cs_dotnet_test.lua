@@ -39,7 +39,7 @@ M.commands = {
 		cmd = function(filename, _)
 			return {
 				dir = dotnet.get_solution_dir(filename),
-				command_line = "dotnet test",
+				command_line = "dotnet test --no-restore",
 			}
 		end,
 	},

@@ -60,8 +60,8 @@ describe("command_runner.builtin.dotnet_test", function()
 			it("should filter by the class name declared in the buffer", function()
 				local out = cmd.cmd(file, buf)
 				local command_line = out.command_line
-				assert.equals(root, out.dir)
 
+				assert.equals(root, out.dir)
 				assert_base_command(command_line, "dotnet test")
 				assert_no_restore(command_line)
 				assert_filter(command_line, "ClassName~FooTests")
@@ -95,8 +95,8 @@ describe("command_runner.builtin.dotnet_test", function()
 			it("should filter by the fully-qualified namespace", function()
 				local out = cmd.cmd(file, buf)
 				local command_line = out.command_line
-				assert.equals(root, out.dir)
 
+				assert.equals(root, out.dir)
 				assert_base_command(command_line, "dotnet test")
 				assert_no_restore(command_line)
 				assert_filter(command_line, "FullyQualifiedName~My.App.Tests")
@@ -123,8 +123,11 @@ describe("command_runner.builtin.dotnet_test", function()
 
 			it("should run the whole solution", function()
 				local out = cmd.cmd(file)
+				local command_line = out.command_line
+
 				assert.equals(root, out.dir)
-				assert.equals("dotnet test", out.command_line)
+				assert_base_command(command_line, "dotnet test")
+				assert_no_restore(command_line)
 			end)
 		end)
 	end)
