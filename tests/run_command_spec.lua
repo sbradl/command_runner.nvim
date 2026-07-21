@@ -387,7 +387,6 @@ describe("command_runner.run_command", function()
 	end)
 
 	describe("given a command was run before", function()
-		local offered
 		local sent
 		local select_response
 
@@ -399,8 +398,7 @@ describe("command_runner.run_command", function()
 			replace(vim.api, "nvim_chan_send", function(id, data)
 				table.insert(sent, { id = id, data = data })
 			end)
-			replace(vim.ui, "select", function(items, _, cb)
-				offered = items
+			replace(vim.ui, "select", function(_, _, cb)
 				cb(select_response)
 			end)
 
@@ -426,55 +424,6 @@ describe("command_runner.run_command", function()
 			assert.same({ "/proj" }, terminal_mock.calls)
 		end)
 
-		it("should prepend a rerun entry before the sorted commands", function()
-			select_response = nil
-			cr.run_command()
-
-			assert.same({ "Rerun: run", "build", "run" }, offered)
-		end)
-
-		it("should offer the rerun entry in any buffer, even without registered commands", function()
-			set_current_file("b.py")
-
-			select_response = nil
-			cr.run_command()
-
-			assert.same({ "Rerun: run" }, offered)
-		end)
-
-		it("should offer the rerun entry even when every command is filtered out", function()
-			register({
-				ts = {
-					{
-						label = "never",
-						filter = function()
-							return false
-						end,
-						cmd = function()
-							return {}
-						end,
-					},
-				},
-			})
-			set_current_file("c.ts")
-
-			select_response = nil
-			cr.run_command()
-
-			assert.same({ "Rerun: run" }, offered)
-		end)
-
-		it("should replay the stored command verbatim when selected", function()
-			local buf2 = set_current_file("b.py")
-			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
-
-			select_response = "Rerun: run"
-			cr.run_command()
-
-			assert.same({ "/proj", "/proj" }, terminal_mock.calls)
-			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
-		end)
-
 		it("should replay the stored command via rerun_command without showing the picker", function()
 			local buf2 = set_current_file("b.py")
 			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
@@ -486,6 +435,158 @@ describe("command_runner.run_command", function()
 
 			assert.same({ "/proj", "/proj" }, terminal_mock.calls)
 			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
+		end)
+
+		it("should offer the executed command in show_history", function()
+			local offered
+			replace(vim.ui, "select", function(items, _, cb)
+				offered = items
+				cb(nil)
+			end)
+
+			cr.show_history()
+
+			assert.same({ "run — /proj" }, offered)
+		end)
+
+		it("should replay the selected history entry verbatim regardless of the current buffer", function()
+			local buf2 = set_current_file("b.py")
+			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
+			replace(vim.ui, "select", function(_, _, cb)
+				cb("run — /proj")
+			end)
+
+			cr.show_history()
+
+			assert.same({ "/proj", "/proj" }, terminal_mock.calls)
+			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
+		end)
+
+		it("should not duplicate a repeated command, moving it to the front instead", function()
+			select_response = "build"
+			cr.run_command()
+
+			select_response = "run"
+			cr.run_command()
+
+			local offered
+			replace(vim.ui, "select", function(items, _, cb)
+				offered = items
+				cb(nil)
+			end)
+
+			cr.show_history()
+
+			assert.same({ "run — /proj", "build — /elsewhere" }, offered)
+		end)
+
+		it("should move a selected history entry to the front", function()
+			select_response = "build"
+			cr.run_command()
+			-- history is now [build — /elsewhere, run — /proj]
+
+			replace(vim.ui, "select", function(_, _, cb)
+				cb("run — /proj")
+			end)
+			cr.show_history()
+			-- selecting the older "run" entry should move it back to the front
+
+			local buf2 = set_current_file("b.py")
+			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
+			replace(vim.ui, "select", function()
+				error("the picker should not be shown on rerun_command")
+			end)
+
+			cr.rerun_command()
+
+			assert.same({ id = 777, data = "make && sleep 3 && exit\n" }, sent[#sent])
+		end)
+
+		it("should keep same-label commands as distinct entries when their resolved dir differs", function()
+			register({
+				ts = {
+					{
+						label = "run",
+						cmd = function(filename)
+							return { dir = vim.fs.dirname(filename), command_line = "make" }
+						end,
+					},
+				},
+			})
+
+			local buf1 = set_current_file("x.ts")
+			local dir1 = vim.fs.dirname(vim.api.nvim_buf_get_name(buf1))
+			select_response = "run"
+			cr.run_command()
+
+			local buf2 = set_current_file("y.ts")
+			local dir2 = vim.fs.dirname(vim.api.nvim_buf_get_name(buf2))
+			cr.run_command()
+
+			local offered
+			replace(vim.ui, "select", function(items, _, cb)
+				offered = items
+				cb(nil)
+			end)
+
+			cr.show_history()
+
+			assert.same({
+				"run — " .. dir2,
+				"run — " .. dir1,
+				"run — /proj",
+			}, offered)
+		end)
+	end)
+
+	describe("given history_size is configured", function()
+		it("should drop the oldest entries beyond the configured cap", function()
+			set_current_file("a.ts")
+
+			local select_response
+			replace(vim.ui, "select", function(items, _, cb)
+				cb(select_response)
+			end)
+
+			register({
+				ts = {
+					{
+						label = "one",
+						cmd = function()
+							return { dir = "/one", command_line = "one" }
+						end,
+					},
+					{
+						label = "two",
+						cmd = function()
+							return { dir = "/two", command_line = "two" }
+						end,
+					},
+					{
+						label = "three",
+						cmd = function()
+							return { dir = "/three", command_line = "three" }
+						end,
+					},
+				},
+			}, { history_size = 2 })
+
+			select_response = "one"
+			cr.run_command()
+			select_response = "two"
+			cr.run_command()
+			select_response = "three"
+			cr.run_command()
+
+			local offered
+			replace(vim.ui, "select", function(items, _, cb)
+				offered = items
+				cb(nil)
+			end)
+
+			cr.show_history()
+
+			assert.same({ "three — /three", "two — /two" }, offered)
 		end)
 	end)
 
@@ -506,6 +607,19 @@ describe("command_runner.run_command", function()
 
 			assert.equals(0, #terminal_mock.calls)
 			assert.equals(vim.log.levels.WARN, notified.level)
+		end)
+
+		it("should do nothing when show_history is called", function()
+			set_current_file("a.ts")
+			register({})
+
+			replace(vim.ui, "select", function()
+				error("the picker should not be shown when history is empty")
+			end)
+
+			cr.show_history()
+
+			assert.equals(0, #terminal_mock.calls)
 		end)
 	end)
 

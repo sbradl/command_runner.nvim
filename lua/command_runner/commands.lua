@@ -39,13 +39,72 @@ local function execute(command, opts)
 	end
 end
 
+M._history = {}
+
+--- Inserts entry at the front of history, moving it there instead of
+--- duplicating it if a matching entry (same label and resolved command)
+--- already exists, and trims anything beyond max_size.
+local function record_history(entry, max_size)
+	for i, existing in ipairs(M._history) do
+		if
+			existing.label == entry.label
+			and existing.command.dir == entry.command.dir
+			and existing.command.type == entry.command.type
+			and existing.command.command_line == entry.command.command_line
+		then
+			table.remove(M._history, i)
+			break
+		end
+	end
+
+	table.insert(M._history, 1, entry)
+
+	while #M._history > max_size do
+		table.remove(M._history)
+	end
+end
+
 M.rerun_command = function(opts)
-	if not M._rerun then
+	if #M._history == 0 then
 		vim.notify("command_runner: no command to rerun", vim.log.levels.WARN)
 		return
 	end
 
-	execute(M._rerun.cmd(), opts)
+	execute(M._history[1].command, opts)
+end
+
+local function format_history_label(entry)
+	if entry.command.dir then
+		return entry.label .. " — " .. entry.command.dir
+	end
+	return entry.label
+end
+
+M.show_history = function(opts)
+	if #M._history == 0 then
+		return
+	end
+
+	local labels = {}
+	for _, entry in ipairs(M._history) do
+		table.insert(labels, format_history_label(entry))
+	end
+
+	vim.ui.select(labels, {
+		prompt = "Command history",
+	}, function(selected_label)
+		if not selected_label then
+			return
+		end
+
+		for _, entry in ipairs(M._history) do
+			if format_history_label(entry) == selected_label then
+				record_history(entry, opts.history_size)
+				execute(entry.command, opts)
+				break
+			end
+		end
+	end)
 end
 
 M.choose_and_run_command = function(commands, opts)
@@ -68,12 +127,6 @@ M.choose_and_run_command = function(commands, opts)
 
 	table.sort(options)
 
-	if M._rerun then
-		-- Rerun stays on top, in front of the sorted labels.
-		table.insert(options, 1, M._rerun.label)
-		choices = vim.list_extend({ M._rerun }, choices)
-	end
-
 	vim.ui.select(options, {
 		prompt = name,
 	}, function(selected_label)
@@ -92,14 +145,7 @@ M.choose_and_run_command = function(commands, opts)
 		if selected_choice and type(selected_choice.cmd) == "function" then
 			local command_description = selected_choice.cmd(name, buf)
 
-			if selected_choice ~= M._rerun then
-				M._rerun = {
-					label = "Rerun: " .. selected_label,
-					cmd = function()
-						return command_description
-					end,
-				}
-			end
+			record_history({ label = selected_label, command = command_description }, opts.history_size)
 
 			execute(command_description, opts)
 		end

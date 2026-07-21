@@ -61,6 +61,7 @@ M.setup = function(opts)
 	M._opts = {
 		autoclose_on_success = opts.autoclose_on_success ~= false,
 		autoclose_delay_in_seconds = opts.autoclose_delay_in_seconds or 3,
+		history_size = opts.history_size or 10,
 	}
 
 	if opts.builtin ~= false then
@@ -130,6 +131,11 @@ end
 --- Rerun the last executed command without showing the picker.
 M.rerun_command = function()
 	require("command_runner.commands").rerun_command(M._opts)
+end
+
+--- Show a picker of recently executed commands.
+M.show_history = function()
+	require("command_runner.commands").show_history(M._opts)
 end
 
 return M

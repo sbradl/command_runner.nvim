@@ -12,22 +12,32 @@ Based on the current file a selection of commands is displayed.
 The selected command will be executed when selected.
 ![image](./screenshot_commands_executed.png)
 
-### Rerun
+### Rerun and history
 
-After a command has been executed once, the picker offers a `Rerun: <label>`
-entry at the top of the list. Rerun is a snapshot: it repeats the command
-exactly as it ran before — same command line, same directory — even if the
-current buffer has changed in the meantime (e.g. tests that ran in project A
-are rerun in project A, even from a file in project B). The entry is offered
-regardless of the current file's extension and is kept for the duration of the
-Neovim session; selecting a different command replaces the snapshot.
+Every executed command is recorded in a history, most recent first (capped at
+`history_size`, default 10 — see [Setup](#setup)). Repeating a command that's
+already in history moves it back to the front instead of adding a duplicate.
 
-`require("command_runner").rerun_command()` replays the snapshot directly,
-without showing the picker (it warns when no command has been run yet):
+`require("command_runner").rerun_command()` replays the most recent entry
+directly, without showing a picker (it warns when no command has been run
+yet):
 
 ```lua
 vim.keymap.set("n", "<leader>rr", require("command_runner").rerun_command, { desc = "Rerun last command" })
 ```
+
+`require("command_runner").show_history()` opens a picker over the whole
+history. Selecting an entry re-executes it and moves it to the front:
+
+```lua
+vim.keymap.set("n", "<leader>rh", require("command_runner").show_history, { desc = "Command history" })
+```
+
+Both are snapshots: they repeat the command exactly as it ran before — same
+command line, same directory — even if the current buffer has changed in the
+meantime (e.g. tests that ran in project A are rerun in project A, even from
+a file in project B), and are independent of the current file's extension.
+History is kept for the duration of the Neovim session only.
 
 ## Requirements
 
@@ -83,6 +93,9 @@ require("command_runner").setup({
  -- (defaults shown).
  autoclose_on_success = true,
  autoclose_delay_in_seconds = 3,
+
+ -- Number of recent commands kept for the history picker (default shown).
+ history_size = 10,
 })
 ```
 
