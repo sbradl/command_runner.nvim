@@ -160,6 +160,57 @@ describe("command_runner.run_command", function()
 		end)
 	end)
 
+	describe("on win32", function()
+		local buf
+		local sent
+
+		before_each(function()
+			replace(vim.fn, "has", function(feature)
+				if feature == "win32" then
+					return 1
+				end
+				return 0
+			end)
+
+			-- `is_win32`/`line_ending` are computed once at module load time,
+			-- so the mock above must be in place before the module (re)loads.
+			package.loaded["command_runner.commands"] = nil
+			package.loaded["command_runner"] = nil
+			cr = require("command_runner")
+
+			buf = set_current_file("a.ts")
+			vim.api.nvim_buf_set_var(buf, "terminal_job_id", 4242)
+
+			sent = {}
+			replace(vim.api, "nvim_chan_send", function(id, data)
+				table.insert(sent, { id = id, data = data })
+			end)
+			replace(vim.ui, "select", function(_, _, cb)
+				cb("run")
+			end)
+
+			register({
+				ts = {
+					{
+						label = "run",
+						cmd = function()
+							return { dir = "/proj", command_line = "make" }
+						end,
+					},
+				},
+			}, { autoclose_delay_in_seconds = 10 })
+		end)
+
+		it("should use [Environment]::Exit(0) instead of exit and \\r as the line ending", function()
+			cr.run_command()
+
+			assert.same(
+				{ { id = 4242, data = "make && sleep 10 && [Environment]::Exit(0)\r" } },
+				sent
+			)
+		end)
+	end)
+
 	describe("given an nvim command is selected for the current file", function()
 		local ran
 

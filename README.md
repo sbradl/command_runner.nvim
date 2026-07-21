@@ -97,8 +97,10 @@ immediately.
 
 This relies on Neovim's default `TermClose` autocmd (Neovim >= 0.11) and a
 shell where the `&&` chain is valid — any POSIX shell or PowerShell 7+ (where
-`sleep` aliases `Start-Sleep`). Notably `cmd.exe` and Windows PowerShell 5.1
-are not supported; set `autoclose_on_success = false` there.
+`sleep` aliases `Start-Sleep`). On Windows the final `exit` is sent as
+`[Environment]::Exit(0)` instead, since PowerShell's `exit` keyword isn't
+valid on the right-hand side of `&&`. Notably `cmd.exe` and Windows
+PowerShell 5.1 are not supported; set `autoclose_on_success = false` there.
 
 ### Builtins
 

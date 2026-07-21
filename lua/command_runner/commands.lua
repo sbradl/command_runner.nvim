@@ -2,14 +2,21 @@ local M = {}
 
 local t = require("terminal")
 
-local line_ending = vim.fn.has("win32") == 1 and "\r" or "\n"
+local is_win32 = vim.fn.has("win32") == 1
+local line_ending = is_win32 and "\r" or "\n"
+
+-- PowerShell's `exit` is only recognized at the start of a full statement;
+-- after `&&` it's resolved as a command name lookup and fails ("exit is not
+-- recognized..."). `[Environment]::Exit(0)` is an expression, so it's valid there.
+local exit_command = is_win32 and "[Environment]::Exit(0)" or "exit"
 
 M.open_terminal_and_run_command = function(command, opts)
 	local command_line = command.command_line
 
 	if opts.autoclose_on_success then
 		local delay = opts.autoclose_delay_in_seconds
-		command_line = command_line .. (delay > 0 and (" && sleep " .. delay .. " && exit") or " && exit")
+		command_line = command_line
+			.. (delay > 0 and (" && sleep " .. delay .. " && " .. exit_command) or (" && " .. exit_command))
 	end
 
 	t.open_new_terminal(command.dir)
