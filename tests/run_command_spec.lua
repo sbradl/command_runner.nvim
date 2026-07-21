@@ -425,7 +425,7 @@ describe("command_runner.run_command", function()
 		end)
 
 		it("should describe what rerun_command would execute", function()
-			assert.equals("Rerun: run — /proj", cr.rerun_command_description())
+			assert.equals("Rerun: run — make — /proj", cr.rerun_command_description())
 		end)
 
 		it("should replay the stored command via rerun_command without showing the picker", function()
@@ -450,14 +450,14 @@ describe("command_runner.run_command", function()
 
 			cr.show_history()
 
-			assert.same({ "run — /proj" }, offered)
+			assert.same({ "run — make — /proj" }, offered)
 		end)
 
 		it("should replay the selected history entry verbatim regardless of the current buffer", function()
 			local buf2 = set_current_file("b.py")
 			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
 			replace(vim.ui, "select", function(_, _, cb)
-				cb("run — /proj")
+				cb("run — make — /proj")
 			end)
 
 			cr.show_history()
@@ -481,16 +481,16 @@ describe("command_runner.run_command", function()
 
 			cr.show_history()
 
-			assert.same({ "run — /proj", "build — /elsewhere" }, offered)
+			assert.same({ "run — make — /proj", "build — build — /elsewhere" }, offered)
 		end)
 
 		it("should move a selected history entry to the front", function()
 			select_response = "build"
 			cr.run_command()
-			-- history is now [build — /elsewhere, run — /proj]
+			-- history is now [build — build — /elsewhere, run — make — /proj]
 
 			replace(vim.ui, "select", function(_, _, cb)
-				cb("run — /proj")
+				cb("run — make — /proj")
 			end)
 			cr.show_history()
 			-- selecting the older "run" entry should move it back to the front
@@ -536,9 +536,9 @@ describe("command_runner.run_command", function()
 			cr.show_history()
 
 			assert.same({
-				"run — " .. dir2,
-				"run — " .. dir1,
-				"run — /proj",
+				"run — make — " .. dir2,
+				"run — make — " .. dir1,
+				"run — make — /proj",
 			}, offered)
 		end)
 	end)
@@ -590,7 +590,7 @@ describe("command_runner.run_command", function()
 
 			cr.show_history()
 
-			assert.same({ "three — /three", "two — /two" }, offered)
+			assert.same({ "three — three — /three", "two — two — /two" }, offered)
 		end)
 	end)
 

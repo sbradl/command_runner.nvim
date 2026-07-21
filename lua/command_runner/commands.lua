@@ -74,10 +74,11 @@ M.rerun_command = function(opts)
 end
 
 local function format_history_label(entry)
+	local label = entry.label .. " — " .. entry.command.command_line
 	if entry.command.dir then
-		return entry.label .. " — " .. entry.command.dir
+		label = label .. " — " .. entry.command.dir
 	end
-	return entry.label
+	return label
 end
 
 --- Describes what rerun_command would execute, for use as a dynamic
