@@ -33,6 +33,24 @@ history. Selecting an entry re-executes it and moves it to the front:
 vim.keymap.set("n", "<leader>rh", require("command_runner").show_history, { desc = "Command history" })
 ```
 
+`require("command_runner").rerun_command_description()` returns a string
+describing what `rerun_command()` would run (e.g. `"Rerun: run — /proj"`), or
+`nil` when history is empty. Use it for a dynamic which-key `desc` (which-key
+re-evaluates a function `desc` each time the popup opens — `vim.keymap.set`'s
+`desc` can't do this, it must be a static string):
+
+```lua
+require("which-key").add({
+  {
+    "<leader>rr",
+    require("command_runner").rerun_command,
+    desc = function()
+      return require("command_runner").rerun_command_description() or "Rerun last command"
+    end,
+  },
+})
+```
+
 Both are snapshots: they repeat the command exactly as it ran before — same
 command line, same directory — even if the current buffer has changed in the
 meantime (e.g. tests that ran in project A are rerun in project A, even from

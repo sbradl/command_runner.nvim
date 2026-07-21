@@ -80,6 +80,17 @@ local function format_history_label(entry)
 	return entry.label
 end
 
+--- Describes what rerun_command would execute, for use as a dynamic
+--- which-key desc. Returns nil when history is empty.
+---@return string?
+M.rerun_command_description = function()
+	if #M._history == 0 then
+		return nil
+	end
+
+	return "Rerun: " .. format_history_label(M._history[1])
+end
+
 M.show_history = function(opts)
 	if #M._history == 0 then
 		return

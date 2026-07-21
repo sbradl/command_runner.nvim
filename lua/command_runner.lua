@@ -133,6 +133,13 @@ M.rerun_command = function()
 	require("command_runner.commands").rerun_command(M._opts)
 end
 
+--- Describes what rerun_command would execute (nil when history is empty).
+--- Intended for a dynamic which-key desc.
+---@return string?
+M.rerun_command_description = function()
+	return require("command_runner.commands").rerun_command_description()
+end
+
 --- Show a picker of recently executed commands.
 M.show_history = function()
 	require("command_runner.commands").show_history(M._opts)

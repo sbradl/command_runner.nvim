@@ -424,6 +424,10 @@ describe("command_runner.run_command", function()
 			assert.same({ "/proj" }, terminal_mock.calls)
 		end)
 
+		it("should describe what rerun_command would execute", function()
+			assert.equals("Rerun: run — /proj", cr.rerun_command_description())
+		end)
+
 		it("should replay the stored command via rerun_command without showing the picker", function()
 			local buf2 = set_current_file("b.py")
 			vim.api.nvim_buf_set_var(buf2, "terminal_job_id", 777)
@@ -607,6 +611,13 @@ describe("command_runner.run_command", function()
 
 			assert.equals(0, #terminal_mock.calls)
 			assert.equals(vim.log.levels.WARN, notified.level)
+		end)
+
+		it("should return nil from rerun_command_description", function()
+			set_current_file("a.ts")
+			register({})
+
+			assert.is_nil(cr.rerun_command_description())
 		end)
 
 		it("should do nothing when show_history is called", function()
