@@ -40,11 +40,11 @@ describe("command_runner.builtin.lua_plenary", function()
 				assert.is_true(cmd.filter(file))
 			end)
 
-			it("should build a PlenaryBustedFile nvim command for the file", function()
+			it("should build a PlenaryBustedFile nvim command with a path relative to cwd", function()
 				local out = cmd.cmd(file)
 
 				assert.equals("nvim", out.type)
-				assert.equals("PlenaryBustedFile " .. file, out.command_line)
+				assert.equals("PlenaryBustedFile tests/builtin/lua_plenary_spec.lua", out.command_line)
 			end)
 		end)
 
@@ -70,11 +70,11 @@ describe("command_runner.builtin.lua_plenary", function()
 				assert.equals(1, vim.fn.isdirectory(repo .. "/.git"))
 			end)
 
-			it("should build a PlenaryBustedDirectory nvim command rooted at the repo", function()
+			it("should build a PlenaryBustedDirectory nvim command with a path relative to cwd", function()
 				local out = cmd.cmd(file)
 
 				assert.equals("nvim", out.type)
-				assert.equals("PlenaryBustedDirectory " .. repo, out.command_line)
+				assert.equals("PlenaryBustedDirectory .", out.command_line)
 			end)
 		end)
 	end)
