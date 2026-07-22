@@ -1,3 +1,5 @@
+local repo = vim.fn.getcwd()
+
 describe("command_runner.run_command", function()
 	local cr
 	local terminal_mock
@@ -581,6 +583,64 @@ describe("command_runner.run_command", function()
 				"run — make — " .. dir1,
 				"run — make — /proj",
 			}, offered)
+		end)
+	end)
+
+	describe("given the history entry's dir", function()
+		before_each(function()
+			local buf = set_current_file("a.ts")
+			vim.api.nvim_buf_set_var(buf, "terminal_job_id", 4242)
+			replace(vim.api, "nvim_chan_send", function() end)
+			replace(vim.ui, "select", function(_, _, cb)
+				cb("run")
+			end)
+		end)
+
+		it("should show it relative to the git repo root, even when cwd is a subdirectory", function()
+			replace(vim.fn, "getcwd", function()
+				return repo .. "/tests"
+			end)
+
+			register({
+				ts = {
+					{
+						label = "run",
+						cmd = function()
+							return { dir = repo .. "/lua/command_runner", command_line = "make" }
+						end,
+					},
+				},
+			})
+
+			cr.run_command()
+
+			assert.equals("Rerun: run — make — lua/command_runner", cr.rerun_command_description())
+		end)
+
+		it("should show it relative to cwd when it is outside any git repository", function()
+			local outer = vim.fn.tempname()
+			vim.fn.mkdir(outer .. "/proj/sub", "p")
+
+			replace(vim.fn, "getcwd", function()
+				return outer .. "/proj"
+			end)
+
+			register({
+				ts = {
+					{
+						label = "run",
+						cmd = function()
+							return { dir = outer .. "/proj/sub", command_line = "make" }
+						end,
+					},
+				},
+			})
+
+			cr.run_command()
+
+			assert.equals("Rerun: run — make — sub", cr.rerun_command_description())
+
+			vim.fn.delete(outer, "rf")
 		end)
 	end)
 

@@ -34,8 +34,10 @@ vim.keymap.set("n", "<leader>rh", require("command_runner").show_history, { desc
 ```
 
 `require("command_runner").rerun_command_description()` returns a string
-describing what `rerun_command()` would run (e.g. `"Rerun: run — /proj"`), or
-`nil` when history is empty. Use it for a dynamic which-key `desc` (which-key
+describing what `rerun_command()` would run (e.g. `"Rerun: run — make — src"`),
+or `nil` when history is empty. The directory is shortened relative to its git
+repository root, or to Neovim's cwd when it isn't inside one. Use it for a
+dynamic which-key `desc` (which-key
 re-evaluates a function `desc` each time the popup opens — `vim.keymap.set`'s
 `desc` can't do this, it must be a static string):
 

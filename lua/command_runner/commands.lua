@@ -1,6 +1,7 @@
 local M = {}
 
 local t = require("terminal")
+local U = require("command_runner.util")
 
 local is_win32 = vim.fn.has("win32") == 1
 local line_ending = is_win32 and "\r" or "\n"
@@ -92,10 +93,19 @@ M.rerun_command = function(opts)
 	execute(M._history[1].command, opts)
 end
 
+--- Shorten `dir` against its git repository root, or Neovim's cwd when it's
+--- not inside one, to keep history labels short.
+local function shorten_dir(dir)
+	if U.get_git_dir(dir) then
+		return U.relative_to_git(dir)
+	end
+	return U.relative_to_cwd(dir)
+end
+
 local function format_history_label(entry)
 	local label = entry.label .. " — " .. entry.command.command_line
 	if entry.command.dir then
-		label = label .. " — " .. entry.command.dir
+		label = label .. " — " .. shorten_dir(entry.command.dir)
 	end
 	return label
 end
