@@ -59,9 +59,7 @@ History is kept for the duration of the Neovim session only.
 
 ## Requirements
 
-- Neovim (with `vim.fs`, i.e. 0.8+). The default [autoclose](#autoclose)
-  behavior additionally relies on Neovim's default `TermClose` autocmd (0.11+);
-  on older versions the terminal buffer lingers after a successful command.
+- Neovim (with `vim.fs`, i.e. 0.8+).
 - [terminal.nvim](https://github.com/sbradl/terminal.nvim) — a runtime dependency, but only for commands executed in a terminal (`type = "terminal"`, the default). Commands with `type = "nvim"` do not need it.
 
 ## Installation
@@ -126,12 +124,17 @@ the shell stays open with the output. Pressing `Ctrl-C` during the delay
 cancels the pending `exit` and keeps the terminal. A delay of `0` closes
 immediately.
 
-This relies on Neovim's default `TermClose` autocmd (Neovim >= 0.11) and a
-shell where the `&&` chain is valid — any POSIX shell or PowerShell 7+ (where
-`sleep` aliases `Start-Sleep`). On Windows the final `exit` is sent as
-`[Environment]::Exit(0)` instead, since PowerShell's `exit` keyword isn't
-valid on the right-hand side of `&&`. Notably `cmd.exe` and Windows
-PowerShell 5.1 are not supported; set `autoclose_on_success = false` there.
+The buffer deletion is done via our own `TermClose` autocmd (checking
+`v:event.status == 0`), not Neovim's built-in one — the built-in autocmd only
+fires when the job's argv string-matches `'shell'` exactly, which is unreliable
+on Windows (see [neovim#28384](https://github.com/neovim/neovim/issues/28384)).
+
+This requires a shell where the `&&` chain is valid — any POSIX shell or
+PowerShell 7+ (where `sleep` aliases `Start-Sleep`). On Windows the final
+`exit` is sent as `[Environment]::Exit(0)` instead, since PowerShell's `exit`
+keyword isn't valid on the right-hand side of `&&`. Notably `cmd.exe` and
+Windows PowerShell 5.1 are not supported; set `autoclose_on_success = false`
+there.
 
 ### Builtins
 

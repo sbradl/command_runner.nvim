@@ -21,6 +21,25 @@ M.open_terminal_and_run_command = function(command, opts)
 
 	t.open_new_terminal(command.dir)
 	local new_buf = vim.api.nvim_get_current_buf()
+
+	if opts.autoclose_on_success then
+		-- Neovim's own default TermClose autocmd would also do this, but only
+		-- when the job's argv string-matches `vim.o.shell` exactly; on Windows
+		-- that comparison is unreliable (libuv/CreateProcessA quoting nuances),
+		-- so the built-in autocmd silently never fires. Deleting the buffer
+		-- ourselves on a clean exit sidesteps that entirely.
+		vim.api.nvim_create_autocmd("TermClose", {
+			buffer = new_buf,
+			once = true,
+			nested = true,
+			callback = function()
+				if vim.v.event.status == 0 and vim.api.nvim_buf_is_valid(new_buf) then
+					vim.api.nvim_buf_delete(new_buf, { force = true })
+				end
+			end,
+		})
+	end
+
 	vim.defer_fn(function()
 		local chan_id = vim.b[new_buf].terminal_job_id
 		if chan_id then

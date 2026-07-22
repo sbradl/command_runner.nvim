@@ -5,7 +5,7 @@
 ---@class CommandRunnerOpts
 ---@field commands? table<string, CommandDescription[]> A table command descriptions by file-extension. For directory commands the special string ":directory" can be used.
 ---@field builtin? BuiltinOpts | false Options for the builtin commands. Pass `false` to disable all builtins at once.
----@field autoclose_on_success? boolean Close the terminal automatically when the command exits successfully. Defaults to true. Requires Neovim >= 0.11 and a shell where `<cmd> && sleep <n> && exit` (POSIX shells) or `<cmd> && sleep <n> && [Environment]::Exit(0)` (PowerShell 7+) is valid.
+---@field autoclose_on_success? boolean Close the terminal automatically when the command exits successfully. Defaults to true. Requires a shell where `<cmd> && sleep <n> && exit` (POSIX shells) or `<cmd> && sleep <n> && [Environment]::Exit(0)` (PowerShell 7+) is valid.
 ---@field autoclose_delay_in_seconds? integer How long the terminal stays open after a successful command before closing. Defaults to 3; 0 closes immediately. Ctrl-C during the delay cancels the close.
 ---@field history_size? integer Maximum number of recent commands kept for the history picker (see show_history()). Defaults to 10.
 

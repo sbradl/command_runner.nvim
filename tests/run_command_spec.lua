@@ -157,6 +157,47 @@ describe("command_runner.run_command", function()
 
 				assert.same({ { id = 4242, data = "make && sleep 10 && exit\n" } }, sent)
 			end)
+
+			-- Registered independently of Neovim's own default TermClose autocmd,
+			-- which only fires when the job's argv string-matches 'shell' exactly
+			-- (unreliable on Windows, see README's Autoclose section).
+			describe("terminal buffer deletion on TermClose", function()
+				local function fire_term_close(status)
+					local orig_v = vim.v
+					vim.v = setmetatable({ event = { status = status } }, { __index = orig_v })
+					-- `data.pos` keeps Neovim's own (unrelated) TermClose autocmd,
+					-- which displays "[Process exited]" text, from erroring on a nil field.
+					vim.api.nvim_exec_autocmds("TermClose", { buffer = buf, data = { pos = 0 } })
+					vim.v = orig_v
+				end
+
+				it("should delete the terminal buffer once the job exits successfully", function()
+					register(commands, { autoclose_delay_in_seconds = 0 })
+
+					cr.run_command()
+					fire_term_close(0)
+
+					assert.is_false(vim.api.nvim_buf_is_valid(buf))
+				end)
+
+				it("should keep the terminal buffer when the job exits with an error", function()
+					register(commands, { autoclose_delay_in_seconds = 0 })
+
+					cr.run_command()
+					fire_term_close(1)
+
+					assert.is_true(vim.api.nvim_buf_is_valid(buf))
+				end)
+
+				it("should not delete the terminal buffer when autoclose_on_success is false", function()
+					register(commands, { autoclose_on_success = false })
+
+					cr.run_command()
+					fire_term_close(0)
+
+					assert.is_true(vim.api.nvim_buf_is_valid(buf))
+				end)
+			end)
 		end)
 	end)
 
