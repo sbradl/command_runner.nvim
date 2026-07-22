@@ -40,6 +40,26 @@ M.find_root = function(filename, marker)
 	return nil
 end
 
+--- Shorten `path` against Neovim's cwd rather than a project root. Useful for
+--- commands run via `vim.cmd` (not in a shell in some `dir`), which resolve
+--- relative paths against cwd.
+---
+---@param path string
+---@return string
+M.relative_to_cwd = function(path)
+	return vim.fs.relpath(vim.fn.getcwd(), path) or path
+end
+
+--- Shorten `path` against the git repository root containing it, falling
+--- back to `path` unchanged when it's not inside a git repository.
+---
+---@param path string
+---@return string
+M.relative_to_git = function(path)
+	local git_dir = M.get_git_dir(path)
+	return git_dir and (vim.fs.relpath(git_dir, path) or path) or path
+end
+
 --- Build a Command that opens `filepath` in the current window via `:edit`.
 ---
 ---@param filepath string

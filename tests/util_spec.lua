@@ -31,6 +31,22 @@ describe("command_runner.util", function()
 		end)
 	end)
 
+	describe("relative_to_git", function()
+		describe("given a file inside a git repository", function()
+			it("should return the path relative to the repository root", function()
+				local file = repo .. "/tests/testdata/util/src/a.lua"
+				assert.equals("tests/testdata/util/src/a.lua", util.relative_to_git(file))
+			end)
+		end)
+
+		describe("given a file that is not inside any git repository", function()
+			it("should return the path unchanged", function()
+				local file = "/no/such/repo/file.lua"
+				assert.equals(file, util.relative_to_git(file))
+			end)
+		end)
+	end)
+
 	describe("find_root", function()
 		local data = repo .. "/tests/testdata/util/find_root"
 
