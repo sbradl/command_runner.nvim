@@ -1,88 +1,76 @@
-local U = require("command_runner.util")
-
 local M = {}
 
-local markers = { "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml" }
+M.extensions = { "yml", "yaml" }
 
--- vim.fs.root has no `stop` option (unlike U.find_root's vim.fs.find-based
--- search), so a repo boundary is enforced afterwards: discard a root found
--- above the repository, so a stray marker outside it is never picked up.
-M.get_project_dir = function(dir)
-	local root = vim.fs.root(dir, markers)
-	if not root then
-		return nil
-	end
+local compose_filenames = {
+	["docker-compose.yml"] = true,
+	["docker-compose.yaml"] = true,
+	["compose.yml"] = true,
+	["compose.yaml"] = true,
+}
 
-	local repo = U.get_git_dir(dir)
-	if repo and root ~= repo and not vim.startswith(root, repo .. "/") then
-		return nil
-	end
-
-	return root
-end
-
-local function is_compose_project(dir)
-	return M.get_project_dir(dir) ~= nil
+local function is_compose_file(filename)
+	return compose_filenames[vim.fs.basename(filename)] == true
 end
 
 ---@type CommandDescription[]
-M.directory_commands = {
+M.commands = {
 	{
 		label = "docker compose up -d",
-		filter = is_compose_project,
-		cmd = function(dir)
+		filter = is_compose_file,
+		cmd = function(filename)
 			return {
-				dir = M.get_project_dir(dir),
+				dir = vim.fs.dirname(filename),
 				command_line = "docker compose up -d",
 			}
 		end,
 	},
 	{
 		label = "docker compose down",
-		filter = is_compose_project,
-		cmd = function(dir)
+		filter = is_compose_file,
+		cmd = function(filename)
 			return {
-				dir = M.get_project_dir(dir),
+				dir = vim.fs.dirname(filename),
 				command_line = "docker compose down",
 			}
 		end,
 	},
 	{
 		label = "docker compose build",
-		filter = is_compose_project,
-		cmd = function(dir)
+		filter = is_compose_file,
+		cmd = function(filename)
 			return {
-				dir = M.get_project_dir(dir),
+				dir = vim.fs.dirname(filename),
 				command_line = "docker compose build",
 			}
 		end,
 	},
 	{
 		label = "docker compose logs -f",
-		filter = is_compose_project,
-		cmd = function(dir)
+		filter = is_compose_file,
+		cmd = function(filename)
 			return {
-				dir = M.get_project_dir(dir),
+				dir = vim.fs.dirname(filename),
 				command_line = "docker compose logs -f",
 			}
 		end,
 	},
 	{
 		label = "docker compose ps",
-		filter = is_compose_project,
-		cmd = function(dir)
+		filter = is_compose_file,
+		cmd = function(filename)
 			return {
-				dir = M.get_project_dir(dir),
+				dir = vim.fs.dirname(filename),
 				command_line = "docker compose ps",
 			}
 		end,
 	},
 	{
 		label = "docker compose restart",
-		filter = is_compose_project,
-		cmd = function(dir)
+		filter = is_compose_file,
+		cmd = function(filename)
 			return {
-				dir = M.get_project_dir(dir),
+				dir = vim.fs.dirname(filename),
 				command_line = "docker compose restart",
 			}
 		end,
