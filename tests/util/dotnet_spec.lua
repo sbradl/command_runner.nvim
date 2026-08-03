@@ -104,4 +104,62 @@ describe("command_runner.util.dotnet", function()
 			end)
 		end)
 	end)
+
+	describe("get_method", function()
+		local buf
+
+		before_each(function()
+			buf = buf_with({
+				"namespace proj",
+				"{",
+				"    [TestClass]",
+				"    public class FooTests",
+				"    {",
+				"        [TestMethod]",
+				"        public void Should_Return_True()",
+				"        {",
+				"            Assert.IsTrue(true);",
+				"        }",
+				"    }",
+				"}",
+			})
+		end)
+
+		after_each(function()
+			vim.api.nvim_buf_delete(buf, { force = true })
+		end)
+
+		describe("given a cursor inside a test method's body", function()
+			it("should return the enclosing method name", function()
+				assert.equals("Should_Return_True", dotnet.get_method(buf, 9))
+			end)
+		end)
+
+		describe("given a cursor on the method's signature line", function()
+			it("should return the method name", function()
+				assert.equals("Should_Return_True", dotnet.get_method(buf, 7))
+			end)
+		end)
+
+		describe("given a cursor with no enclosing method", function()
+			it("should return nil", function()
+				assert.is_nil(dotnet.get_method(buf, 1))
+			end)
+		end)
+	end)
+
+	describe("get_method given a public field initialized with a constructor call", function()
+		it("should not mistake the constructor call for a method", function()
+			local buf = buf_with({
+				"public class FooTests",
+				"{",
+				'    public static readonly Regex Pattern = new Regex("a");',
+				"}",
+			})
+
+			assert.is_nil(dotnet.get_method(buf, 3))
+
+			vim.api.nvim_buf_delete(buf, { force = true })
+		end)
+	end)
 end)

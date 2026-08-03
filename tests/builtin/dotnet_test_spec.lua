@@ -70,6 +70,56 @@ describe("command_runner.builtin.dotnet_test", function()
 		end)
 	end)
 
+	describe("'dotnet test current method' command", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(dotnet.commands, "dotnet test current method")
+		end)
+
+		describe("given the cursor inside a test method in a file inside a solution", function()
+			local root
+			local file
+			local buf
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+				buf = buf_with({
+					"namespace proj",
+					"{",
+					"    [TestClass]",
+					"    public class FooTests",
+					"    {",
+					"        [TestMethod]",
+					"        public void Should_Return_True()",
+					"        {",
+					"            Assert.IsTrue(true);",
+					"        }",
+					"    }",
+					"}",
+				})
+				vim.api.nvim_set_current_buf(buf)
+				vim.api.nvim_win_set_cursor(0, { 9, 0 })
+			end)
+
+			after_each(function()
+				vim.api.nvim_buf_delete(buf, { force = true })
+			end)
+
+			it("should filter by the enclosing class and method", function()
+				local out = cmd.cmd(file, buf)
+				local command_line = out.command_line
+
+				assert.equals(root, out.dir)
+				assert_base_command(command_line, "dotnet test")
+				assert_no_restore(command_line)
+				assert_filter(command_line, "FullyQualifiedName~FooTests.Should_Return_True")
+				assert_project(command_line, "proj/proj.csproj")
+			end)
+		end)
+	end)
+
 	describe("'dotnet test current namespace' command", function()
 		local cmd
 

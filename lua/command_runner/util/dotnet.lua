@@ -66,4 +66,40 @@ M.get_class = function(buf)
 	return nil
 end
 
+--- Extracts the identifier immediately followed by `(` from a line that
+--- looks like a method signature, or nil if it doesn't look like one.
+--- Rejects matches preceded by `=` (a field/property initializer calling a
+--- constructor or method, e.g. `= new Regex(...)`), since a real method
+--- signature never has `=` before its name.
+local function method_name_from_signature(text)
+	local start, _, method = text:find("([%w_]+)%s*%(")
+	if not method then
+		return nil
+	end
+	if text:sub(1, start - 1):find("=", 1, true) then
+		return nil
+	end
+	return method
+end
+
+--- Walks backward from `line` (1-indexed, inclusive) for the nearest line
+--- that looks like a method signature, and returns the captured name. Test
+--- methods must be public, so this only considers lines with the `public`
+--- modifier; it's a line-regex heuristic, not a real parser.
+M.get_method = function(buf, line)
+	local lines = vim.api.nvim_buf_get_lines(buf, 0, line, false)
+
+	for i = #lines, 1, -1 do
+		local text = lines[i]
+		if text:match("%f[%w]public%f[%W]") then
+			local method = method_name_from_signature(text)
+			if method then
+				return method
+			end
+		end
+	end
+
+	return nil
+end
+
 return M
