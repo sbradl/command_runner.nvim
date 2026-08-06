@@ -157,7 +157,15 @@ M.choose_and_run_command = function(commands, opts)
 		ext = ":directory"
 	end
 
-	local choices = commands[ext] or {}
+	-- Directory commands (e.g. "mix new") apply to the project a buffer lives
+	-- in regardless of that buffer's own extension, so they're offered
+	-- alongside every extension's commands rather than gated behind having no
+	-- extension at all.
+	local choices = {}
+	vim.list_extend(choices, commands[ext] or {})
+	if ext ~= ":directory" then
+		vim.list_extend(choices, commands[":directory"] or {})
+	end
 
 	local options = {}
 	for _, choice in ipairs(choices) do

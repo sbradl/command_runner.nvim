@@ -15,9 +15,12 @@ end
 M.directory_commands = {
 	{
 		label = "mix new",
-		cmd = function(dir)
+		filter = function(filename)
+			return not is_elixir_project(filename)
+		end,
+		cmd = function(filename)
 			return {
-				dir = dir,
+				dir = vim.fn.fnamemodify(filename, ":p:h"),
 				command_line = "mix new .",
 			}
 		end,

@@ -401,6 +401,40 @@ describe("command_runner.run_command", function()
 		end)
 	end)
 
+	describe("given the current buffer has a registered extension and directory commands are registered", function()
+		local offered
+
+		before_each(function()
+			set_current_file("a.ts")
+
+			offered = nil
+			replace(vim.ui, "select", function(items, _, _)
+				offered = items
+			end)
+		end)
+
+		it("should offer the ':directory' command list alongside the extension's own commands", function()
+			register({
+				[":directory"] = { {
+					label = "mix new",
+					cmd = function()
+						return {}
+					end,
+				} },
+				ts = { {
+					label = "ts-thing",
+					cmd = function()
+						return {}
+					end,
+				} },
+			})
+
+			cr.run_command()
+
+			assert.same({ "mix new", "ts-thing" }, offered)
+		end)
+	end)
+
 	describe("given the current buffer's extension has no registered commands", function()
 		local offered
 

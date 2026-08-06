@@ -15,9 +15,12 @@ end
 M.directory_commands = {
 	{
 		label = "phx new",
-		cmd = function(dir)
+		filter = function(filename)
+			return not is_elixir_project(filename)
+		end,
+		cmd = function(filename)
 			return {
-				dir = dir,
+				dir = vim.fn.fnamemodify(filename, ":p:h"),
 				command_line = "mix archive.install hex phx_new && mix phx.new .",
 			}
 		end,
