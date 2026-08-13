@@ -155,6 +155,34 @@ describe("command_runner.builtin.dotnet_test", function()
 		end)
 	end)
 
+	describe("'dotnet test current project' command", function()
+		local cmd
+
+		before_each(function()
+			cmd = find_command(dotnet.commands, "dotnet test current project")
+		end)
+
+		describe("given a test file inside a solution", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/classic_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should run just the enclosing project", function()
+				local out = cmd.cmd(file)
+				local command_line = out.command_line
+
+				assert.equals(root, out.dir)
+				assert_base_command(command_line, "dotnet test")
+				assert_no_restore(command_line)
+				assert_project(command_line, "proj/proj.csproj")
+			end)
+		end)
+	end)
+
 	describe("'dotnet test solution' command", function()
 		local cmd
 

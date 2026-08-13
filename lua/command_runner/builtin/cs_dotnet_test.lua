@@ -52,6 +52,17 @@ M.commands = {
 		end,
 	},
 	{
+		label = "dotnet test current project",
+		cmd = function(filename, _)
+			local project_file = dotnet.get_project_file(filename)
+
+			return {
+				dir = dotnet.get_solution_dir(filename),
+				command_line = "dotnet test --no-restore " .. project_file,
+			}
+		end,
+	},
+	{
 		label = "dotnet test solution",
 		cmd = function(filename, _)
 			return {
