@@ -1,0 +1,5 @@
+[tasks.build]
+run = "echo build"
+
+[tasks.test]
+run = "echo test"

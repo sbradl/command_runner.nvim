@@ -160,18 +160,34 @@ M.choose_and_run_command = function(commands, opts)
 	-- Directory commands (e.g. "mix new") apply to the project a buffer lives
 	-- in regardless of that buffer's own extension, so they're offered
 	-- alongside every extension's commands rather than gated behind having no
-	-- extension at all.
+	-- extension at all. Commands under the "*" key apply to every buffer
+	-- regardless of extension (used by ecosystem-agnostic builtins like mise).
 	local choices = {}
+	vim.list_extend(choices, commands["*"] or {})
 	vim.list_extend(choices, commands[ext] or {})
 	if ext ~= ":directory" then
 		vim.list_extend(choices, commands[":directory"] or {})
 	end
 
-	local options = {}
+	-- Resolve each surviving choice to zero or more concrete descriptions. A
+	-- choice with an `expand(filename, bufnr)` contributes the list it returns
+	-- (for command sets only known at pick time, e.g. one entry per task in a
+	-- mise.toml); every other choice contributes itself. `filter` still gates
+	-- the choice before `expand` runs.
+	local resolved = {}
 	for _, choice in ipairs(choices) do
 		if choice.filter == nil or choice.filter(name) then
-			table.insert(options, choice.label)
+			if choice.expand then
+				vim.list_extend(resolved, choice.expand(name, buf))
+			else
+				table.insert(resolved, choice)
+			end
 		end
+	end
+
+	local options = {}
+	for _, choice in ipairs(resolved) do
+		table.insert(options, choice.label)
 	end
 
 	table.sort(options)
@@ -184,7 +200,7 @@ M.choose_and_run_command = function(commands, opts)
 		end
 
 		local selected_choice = nil
-		for _, choice in ipairs(choices) do
+		for _, choice in ipairs(resolved) do
 			if choice.label == selected_label then
 				selected_choice = choice
 				break

@@ -435,6 +435,130 @@ describe("command_runner.run_command", function()
 		end)
 	end)
 
+	describe("given commands are registered under the '*' key", function()
+		local offered
+
+		before_each(function()
+			offered = nil
+			replace(vim.ui, "select", function(items, _, _)
+				offered = items
+			end)
+		end)
+
+		it("should offer them regardless of the current buffer's extension", function()
+			set_current_file("a.py")
+			register({
+				["*"] = { {
+					label = "any",
+					cmd = function()
+						return {}
+					end,
+				} },
+				ts = { {
+					label = "ts-thing",
+					cmd = function()
+						return {}
+					end,
+				} },
+			})
+
+			cr.run_command()
+
+			assert.same({ "any" }, offered)
+		end)
+	end)
+
+	describe("given a choice provides an expand function", function()
+		local offered
+
+		before_each(function()
+			set_current_file("a.ts")
+			offered = nil
+			replace(vim.ui, "select", function(items, _, _)
+				offered = items
+			end)
+		end)
+
+		it("should offer the descriptions it returns in its place", function()
+			register({
+				ts = {
+					{
+						label = "placeholder",
+						expand = function()
+							return {
+								{ label = "task a", cmd = function()
+									return {}
+								end },
+								{ label = "task b", cmd = function()
+									return {}
+								end },
+							}
+						end,
+					},
+				},
+			})
+
+			cr.run_command()
+
+			assert.same({ "task a", "task b" }, offered)
+		end)
+
+		it("should not expand when the choice's filter rejects the buffer", function()
+			register({
+				ts = {
+					{
+						label = "placeholder",
+						filter = function()
+							return false
+						end,
+						expand = function()
+							error("expand should not run when filter fails")
+						end,
+					},
+				},
+			})
+
+			cr.run_command()
+
+			assert.same({}, offered)
+		end)
+
+		it("should run the selected expanded description's command", function()
+			local buf = vim.api.nvim_get_current_buf()
+			vim.api.nvim_buf_set_var(buf, "terminal_job_id", 4242)
+			local sent = {}
+			replace(vim.api, "nvim_chan_send", function(id, data)
+				table.insert(sent, { id = id, data = data })
+			end)
+			replace(vim.ui, "select", function(_, _, cb)
+				cb("task b")
+			end)
+
+			register({
+				ts = {
+					{
+						label = "placeholder",
+						expand = function()
+							return {
+								{ label = "task a", cmd = function()
+									return { dir = "/a", command_line = "a" }
+								end },
+								{ label = "task b", cmd = function()
+									return { dir = "/b", command_line = "b" }
+								end },
+							}
+						end,
+					},
+				},
+			})
+
+			cr.run_command()
+
+			assert.same({ "/b" }, terminal_mock.calls)
+			assert.same({ { id = 4242, data = "b && sleep 3 && exit\n" } }, sent)
+		end)
+	end)
+
 	describe("given the current buffer's extension has no registered commands", function()
 		local offered
 
