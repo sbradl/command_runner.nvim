@@ -1,5 +1,3 @@
-local data = vim.fn.getcwd() .. "/tests/testdata/command_runner"
-
 local cr = require("command_runner")
 
 describe("command_runner", function()
@@ -16,11 +14,7 @@ describe("command_runner", function()
 	end)
 
 	describe("setup", function()
-		describe("given no project-local config", function()
-			before_each(function()
-				assert.is_nil(vim.fs.root(0, ".nvim"))
-			end)
-
+		describe("given default options", function()
 			it("should register every builtin's commands by default", function()
 				cr.setup()
 
@@ -64,87 +58,6 @@ describe("command_runner", function()
 				cr.setup({ builtin = false })
 
 				assert.same({}, cr.get_commands())
-			end)
-
-			it("should register user commands from opts.commands", function()
-				local mycmd = {
-					label = "run script",
-					cmd = function()
-						return { command_line = "python x.py" }
-					end,
-				}
-
-				cr.setup({ commands = { py = { mycmd } } })
-
-				assert.equals(mycmd, cr.get_commands("py")[1])
-			end)
-
-			it("should append user commands to an existing builtin extension", function()
-				cr.setup({
-					commands = {
-						ts = {
-							{
-								label = "tsc",
-								cmd = function()
-									return {}
-								end,
-							},
-						},
-					},
-				})
-				assert.same(
-				{ "npm run build", "edit package.json", "Playwright current file", "vitest current file", "vitest all", "tsc" },
-				labels("ts")
-			)
-			end)
-		end)
-
-		describe("given a project with a .nvim/command_runner.lua", function()
-			before_each(function()
-				vim.cmd.edit(data .. "/with_config/src/foo.rb")
-				assert.equals(data .. "/with_config", vim.fs.root(0, ".nvim"))
-			end)
-
-			it("should register the commands it returns", function()
-				cr.setup()
-				assert.same({ "rake" }, labels("rb"))
-			end)
-		end)
-
-		describe("given a project whose .nvim/command_runner.lua does not return a table", function()
-			before_each(function()
-				vim.cmd.edit(data .. "/bad_config/src/foo.rb")
-				assert.equals(data .. "/bad_config", vim.fs.root(0, ".nvim"))
-			end)
-
-			it("should report an error so the user knows their config is faulty", function()
-				local notified_level
-				local original_notify = vim.notify
-				vim.notify = function(_, level)
-					if level == vim.log.levels.ERROR then
-						notified_level = level
-					end
-				end
-
-				local ok, err = pcall(cr.setup)
-
-				vim.notify = original_notify
-
-				assert.is_true(ok, err) -- reported, not raised
-				assert.equals(vim.log.levels.ERROR, notified_level)
-			end)
-		end)
-
-		describe("given a project whose .nvim/command_runner.lua returns an empty table", function()
-			before_each(function()
-				vim.cmd.edit(data .. "/empty_config/src/foo.rb")
-				assert.equals(data .. "/empty_config", vim.fs.root(0, ".nvim"))
-			end)
-
-			it("should accept it without raising an error", function()
-				assert.has_no.errors(function()
-					cr.setup()
-				end)
 			end)
 		end)
 	end)

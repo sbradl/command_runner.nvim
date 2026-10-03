@@ -15,14 +15,14 @@ describe("command_runner.run_command", function()
 	end
 
 	local function register(commands, opts)
-		local setup_opts = {
-			builtin = false,
-			commands = commands,
-		}
+		local setup_opts = { builtin = false }
 		for k, v in pairs(opts or {}) do
 			setup_opts[k] = v
 		end
 		cr.setup(setup_opts)
+		for ext, command_list in pairs(commands or {}) do
+			cr._register(ext, command_list)
+		end
 	end
 
 	-- Make `basename` the current buffer. A per-test counter keeps buffer names

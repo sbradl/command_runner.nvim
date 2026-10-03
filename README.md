@@ -2,7 +2,8 @@
 
 [![Tests](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml)
 
-Configure and execute project-level and global commands.
+Pick and run commands for the current file: built-in ecosystem commands plus
+all tasks from [mise](https://mise.jdx.dev).
 
 ## run_command
 
@@ -89,19 +90,6 @@ enabled.
 
 ```lua
 require("command_runner").setup({
- -- Extra commands, keyed by file extension. Use the special key ":directory"
- -- for commands offered when the buffer has no extension.
- commands = {
-  py = {
-   {
-    label = "run script",
-    cmd = function(filename)
-     return { command_line = "python " .. filename }
-    end,
-   },
-  },
- },
-
  -- Builtins are opt-out: list the keys you want to disable.
  builtin = {
   disable = { "ts_playwright" },
@@ -162,52 +150,15 @@ Or disable all of them at once with `builtin = false`:
 require("command_runner").setup({ builtin = false })
 ```
 
-## Project-local commands
+## Custom commands
 
-Commands can be specified in a file called `command_runner.lua` inside a `.nvim`
-directory at the project root (discovered upward from the current buffer). The
-file must return a table. The keys are the extensions of the files for which
-commands should be specified.
+There is no custom command configuration. For project-specific commands, the
+recommended approach is to define them as [mise tasks](https://mise.jdx.dev/tasks/)
+in your project's `mise.toml`. The `mise` builtin lists every task in the picker
+for any buffer inside a mise project:
 
-Every command needs a `label` which is displayed in the user selection.
-The `cmd` is a function which returns a table with the description of the
-command. The `type` determines how to execute the command. At the moment
-`terminal` and `nvim` are supported. If omitted `terminal` execution will be
-assumed. For `terminal` commands the `dir` specifies where the command should be
-executed. Every command needs a `command_line` string for the actual command.
-Optionally a `filter` function can be specified to further narrow down for which
-files the command should be offered.
-
-> A project-local file that fails to load, or that does not return a table, is
-> reported via `vim.notify` at `ERROR` level and skipped — the rest of the setup
-> still applies. An empty table is a valid (no-op) config.
-
-An example for running playwright tests could look like this:
-
-```lua
-local function get_project_dir(filename)
- return vim.fs.root(filename, { "playwright.config.ts" })
-end
-
-return {
- ts = {
-  {
-   label = "Playwright",
-   filter = function(filename)
-    return get_project_dir(filename) ~= nil
-   end,
-   cmd = function(filename)
-    local project_dir = get_project_dir(filename)
-
-    return {
-     dir = project_dir,
-     command_line = "npx playwright test",
-    }
-   end,
-  },
- },
-}
+```toml
+[tasks.serve]
+description = "Start the dev server"
+run = "npm run dev"
 ```
-
-The `filter` looks for a playwright.config.ts file above the current file's
-directory. If it exists the Playwright command will be available.

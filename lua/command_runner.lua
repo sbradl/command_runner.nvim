@@ -71,47 +71,6 @@ M.setup = function(opts)
 		end
 		register_builtin_commands(disabled)
 	end
-
-	if opts.commands then
-		for ext, command_list in pairs(opts.commands) do
-			M._register(ext, command_list)
-		end
-	end
-
-	local project_local_nvim_config = vim.fs.root(0, ".nvim")
-
-	if project_local_nvim_config then
-		local project_local_commands_file = project_local_nvim_config .. "/.nvim/command_runner.lua"
-
-		if vim.fn.filereadable(project_local_commands_file) == 1 then
-			vim.notify("Found project level command config", vim.log.levels.INFO)
-			local chunk, err = loadfile(project_local_commands_file)
-			if not chunk then
-				vim.notify(
-					"command_runner: failed to load " .. project_local_commands_file .. ": " .. tostring(err),
-					vim.log.levels.ERROR
-				)
-				return
-			end
-
-			local project_local_commands = chunk()
-
-			if type(project_local_commands) ~= "table" then
-				vim.notify(
-					("command_runner: %s must return a table, got %s"):format(
-						project_local_commands_file,
-						type(project_local_commands)
-					),
-					vim.log.levels.ERROR
-				)
-				return
-			end
-
-			for ext, command_list in pairs(project_local_commands) do
-				M._register(ext, command_list)
-			end
-		end
-	end
 end
 
 ---@param ext? string
