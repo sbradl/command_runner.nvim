@@ -1,9 +1,5 @@
 # Changelog
 
-All notable changes to this project are documented here, grouped by the date
-they were committed (there are no tagged releases). The format is loosely based
-on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-
 ## 2026-10-03
 
 ### Removed
