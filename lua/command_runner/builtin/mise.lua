@@ -21,7 +21,7 @@ end
 --- toml tasks, file tasks, includes — and always matches `mise run`'s own view.
 ---
 ---@param dir string The mise project root, used as the CLI's working directory.
----@return string[] task names, empty when mise is missing or reports an error.
+---@return { name: string, description: string? }[] tasks, empty when mise is missing or reports an error.
 local function list_tasks(dir)
 	local ok, res = pcall(function()
 		return vim.system({ "mise", "tasks", "ls", "--json" }, { cwd = dir, text = true }):wait()
@@ -36,13 +36,30 @@ local function list_tasks(dir)
 		return {}
 	end
 
-	local names = {}
+	local tasks = {}
 	for _, task in ipairs(parsed) do
 		if type(task) == "table" and type(task.name) == "string" then
-			table.insert(names, task.name)
+			local description = type(task.description) == "string" and task.description or nil
+			table.insert(tasks, { name = task.name, description = description })
 		end
 	end
-	return names
+	return tasks
+end
+
+local max_description_length = 60
+
+--- First line of the description, truncated so long ones don't swamp the picker.
+---@param description string?
+---@return string? nil when there is nothing to show.
+local function format_description(description)
+	local line = vim.trim(vim.split(description or "", "\n")[1])
+	if line == "" then
+		return nil
+	end
+	if vim.fn.strchars(line) > max_description_length then
+		line = vim.fn.strcharpart(line, 0, max_description_length - 1) .. "…"
+	end
+	return line
 end
 
 ---@type CommandDescription[]
@@ -54,9 +71,11 @@ M.commands = {
 			local dir = M.get_project_dir(filename)
 
 			local descriptions = {}
-			for _, name in ipairs(list_tasks(dir)) do
+			for _, task in ipairs(list_tasks(dir)) do
+				local name = task.name
+				local description = format_description(task.description)
 				table.insert(descriptions, {
-					label = "mise run " .. name,
+					label = "mise run " .. name .. (description and " — " .. description or ""),
 					cmd = function()
 						return {
 							dir = dir,

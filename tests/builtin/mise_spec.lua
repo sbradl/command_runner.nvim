@@ -101,6 +101,27 @@ describe("command_runner.builtin.mise", function()
 				assert.equals("mise run build", built.command_line)
 			end)
 
+			it("should show the task description after the command", function()
+				stub_mise({
+					code = 0,
+					stdout = vim.json.encode({
+						{ name = "build", description = "Build it\nmore detail" },
+						{ name = "test", description = "" },
+						{ name = "long", description = string.rep("x", 70) },
+					}),
+				})
+
+				local out = cmd.expand(file)
+
+				assert.same(
+					{ "mise run build — Build it", "mise run test", "mise run long — " .. string.rep("x", 59) .. "…" },
+					vim.tbl_map(function(d)
+						return d.label
+					end, out)
+				)
+				assert.equals("mise run build", out[1].cmd(file).command_line)
+			end)
+
 			it("should offer nothing when mise exits non-zero", function()
 				stub_mise({ code = 1, stdout = "" })
 

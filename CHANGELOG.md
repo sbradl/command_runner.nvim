@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-15
+
+### Changed
+
+- `mise` builtin: picker entries show the task description after the command
+  (first line, truncated to 60 chars).
+
 ## 2026-10-03
 
 ### Removed
