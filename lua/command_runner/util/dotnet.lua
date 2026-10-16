@@ -36,6 +36,18 @@ M.get_solution_file = function(filename)
 	return nil
 end
 
+--- Whether `dotnet test` runs in Microsoft.Testing.Platform mode, which the
+--- SDK enables via `"test": { "runner": "Microsoft.Testing.Platform" }` in
+--- the nearest global.json. Pattern match, since global.json allows comments.
+M.uses_mtp = function(filename)
+	local global_json = vim.fs.find("global.json", { upward = true, path = M.get_solution_dir(filename) })[1]
+	if not global_json then
+		return false
+	end
+	local content = table.concat(vim.fn.readfile(global_json), "\n")
+	return content:find('"runner"%s*:%s*"Microsoft%.Testing%.Platform"') ~= nil
+end
+
 M.get_project_file_abs = function(filename)
 	return vim.fs.joinpath(M.get_solution_dir(filename), M.get_project_file(filename))
 end

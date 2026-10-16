@@ -2,6 +2,11 @@ local dotnet = require("command_runner.util.dotnet")
 
 local M = {}
 
+--- MTP mode rejects a positional project; it must be passed via --project.
+local function project_arg(filename)
+	return (dotnet.uses_mtp(filename) and "--project " or "") .. dotnet.get_project_file(filename)
+end
+
 M.extensions = { "cs" }
 
 ---@type CommandDescription[]
@@ -9,7 +14,7 @@ M.commands = {
 	{
 		label = "dotnet test current class",
 		cmd = function(filename, buf)
-			local project_file = dotnet.get_project_file(filename)
+			local project_file = project_arg(filename)
 
 			return {
 				dir = dotnet.get_solution_dir(filename),
@@ -23,7 +28,7 @@ M.commands = {
 	{
 		label = "dotnet test current method",
 		cmd = function(filename, buf)
-			local project_file = dotnet.get_project_file(filename)
+			local project_file = project_arg(filename)
 			local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
 
 			return {
@@ -40,7 +45,7 @@ M.commands = {
 	{
 		label = "dotnet test current namespace",
 		cmd = function(filename, buf)
-			local project_file = dotnet.get_project_file(filename)
+			local project_file = project_arg(filename)
 
 			return {
 				dir = dotnet.get_solution_dir(filename),
@@ -54,7 +59,7 @@ M.commands = {
 	{
 		label = "dotnet test current project",
 		cmd = function(filename, _)
-			local project_file = dotnet.get_project_file(filename)
+			local project_file = project_arg(filename)
 
 			return {
 				dir = dotnet.get_solution_dir(filename),

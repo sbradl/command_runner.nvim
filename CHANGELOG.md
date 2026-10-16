@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-16
+
+### Fixed
+
+- `cs_dotnet_test` builtin: pass the project via `--project` when `global.json`
+  sets `"test": { "runner": "Microsoft.Testing.Platform" }` (MTP mode rejects a
+  positional project).
+
 ## 2026-10-15
 
 ### Changed

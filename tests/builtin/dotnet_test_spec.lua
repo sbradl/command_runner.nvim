@@ -181,6 +181,23 @@ describe("command_runner.builtin.dotnet_test", function()
 				assert_project(command_line, "proj/proj.csproj")
 			end)
 		end)
+
+		describe("given a solution whose global.json selects Microsoft.Testing.Platform", function()
+			local root
+			local file
+
+			before_each(function()
+				root = data .. "/mtp_solution"
+				file = root .. "/proj/FooTests.cs"
+			end)
+
+			it("should pass the project via --project", function()
+				local out = cmd.cmd(file)
+
+				assert.equals(root, out.dir)
+				assert_project(out.command_line, "--project proj/proj.csproj")
+			end)
+		end)
 	end)
 
 	describe("'dotnet test solution' command", function()
