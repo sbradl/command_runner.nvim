@@ -1,0 +1,8 @@
+[tasks."go:run"]
+description = "go run current package"
+usage = 'arg "<dir>" help="package directory, e.g. ./cmd/app"'
+run = 'go run "{{usage.dir}}"'
+
+[tasks."go:build"]
+description = "go build ./..."
+run = "go build ./..."

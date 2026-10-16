@@ -2,8 +2,9 @@
 
 [![Tests](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml)
 
-Pick and run commands for the current file: built-in ecosystem commands plus
-all tasks from [mise](https://mise.jdx.dev).
+Pick and run commands for the current file: every task from
+[mise](https://mise.jdx.dev), filled with context from the current buffer, plus
+a few editor actions.
 
 ## run_command
 
@@ -60,6 +61,49 @@ meantime (e.g. tests that ran in project A are rerun in project A, even from
 a file in project B), and are independent of the current file's extension.
 History is kept for the duration of the Neovim session only.
 
+## install_tasks
+
+Ecosystem commands (dotnet test, vitest, go, mix, docker compose, ...) ship as
+mise task templates in [`templates/`](./templates).
+`require("command_runner").install_tasks()` opens a checklist for the current
+project (git root, else cwd). Templates detected from marker files are
+pre-checked. Press `x` to toggle a line and `:w` to copy the checked ones to
+`.mise/conf.d/command_runner_<name>.toml` and `mise trust` them. mise picks
+them up automatically, with no `mise.toml` required. Files that are already
+installed are never overwritten, so edit them freely.
+
+```lua
+vim.keymap.set("n", "<leader>ri", require("command_runner").install_tasks, { desc = "Install mise tasks" })
+```
+
+### Passing the current file
+
+When you pick a task, the plugin reads its
+[usage spec](https://mise.jdx.dev/tasks/task-arguments.html) and passes each
+arg or flag it recognises by name:
+
+| name        | value                                                    |
+| ----------- | -------------------------------------------------------- |
+| `file`      | current file, relative to the task dir                   |
+| `line`      | cursor line                                              |
+| `dir`       | current file's directory, `./`-prefixed                  |
+| `test_class`, `test_method`, `test_namespace` | C# class/method/namespace at the cursor, only in a test file (`[TestClass]`, `[Fact]`, `[Test]`, ...) |
+| `project`   | nearest `.csproj`, relative to the task dir              |
+| `--mtp`     | flag, set when `global.json` selects Microsoft.Testing.Platform |
+
+Arguments are filled in order, stopping at the first name it doesn't
+recognise. A task is only offered when every required `<arg>` with one of these
+names gets a value, e.g. `dotnet:test-method` only shows up in a C# test file
+with the cursor inside a method. Tasks without args are offered everywhere
+in the project, and so are script-file tasks (`mise tasks ls` doesn't report
+their usage). The same task works from a shell:
+
+```toml
+[tasks."vitest:file"]
+usage = 'arg "<file>"'
+run = 'npx vitest "{{usage.file}}"'
+```
+
 ## Requirements
 
 - Neovim (with `vim.fs`, i.e. 0.8+).
@@ -92,7 +136,7 @@ enabled.
 require("command_runner").setup({
  -- Builtins are opt-out: list the keys you want to disable.
  builtin = {
-  disable = { "ts_playwright" },
+  disable = { "ts_npm" },
  },
 
  -- Close the terminal automatically when a command exits successfully
@@ -128,10 +172,12 @@ there.
 
 ### Builtins
 
-Each builtin registers commands for one ecosystem and is enabled by default.
+Builtins are the few non-mise commands — editor actions (open `.sln`/`.csproj`,
+edit `package.json`), executing the current script — plus the `mise` builtin
+that lists all tasks. Each is enabled by default.
 Builtins are autoloaded from [`lua/command_runner/builtin`](./lua/command_runner/builtin);
 each file is named `<ext>_<name>.lua`, and its key is that filename without the
-`.lua` extension (e.g. `ts_playwright`, `ex_mix`). See that directory for the
+`.lua` extension (e.g. `ts_npm`, `cs_dotnet`). See that directory for the
 full list and the commands each one provides.
 
 Disable specific builtins by listing their keys in `builtin.disable`:
@@ -139,7 +185,7 @@ Disable specific builtins by listing their keys in `builtin.disable`:
 ```lua
 require("command_runner").setup({
  builtin = {
-  disable = { "ts_playwright", "ex_phoenix" },
+  disable = { "ts_npm", "sh_script" },
  },
 })
 ```

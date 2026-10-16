@@ -1,0 +1,3 @@
+[tasks."playwright:test"]
+description = "npx playwright test"
+run = "npx playwright test"

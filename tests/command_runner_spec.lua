@@ -40,17 +40,16 @@ describe("command_runner", function()
 			end)
 
 			it("should let builtins be disabled via opts.builtin.disable", function()
-				cr.setup({ builtin = { disable = { "ts_vitest" } } })
+				cr.setup({ builtin = { disable = { "cs_dotnet" } } })
 
-				local ts_labels = labels("ts")
-				local vitest = require("command_runner.builtin.ts_vitest")
-				local playwright = require("command_runner.builtin.ts_playwright")
+				local cs_dotnet = require("command_runner.builtin.cs_dotnet")
+				local ts_npm = require("command_runner.builtin.ts_npm")
 
-				for _, cmd in ipairs(vitest.commands) do
-					assert.is_false(vim.tbl_contains(ts_labels, cmd.label), cmd.label .. " should be disabled")
+				for _, cmd in ipairs(cs_dotnet.commands) do
+					assert.is_false(vim.tbl_contains(labels("cs"), cmd.label), cmd.label .. " should be disabled")
 				end
-				for _, cmd in ipairs(playwright.commands) do
-					assert.is_true(vim.tbl_contains(ts_labels, cmd.label), cmd.label .. " should remain registered")
+				for _, cmd in ipairs(ts_npm.commands) do
+					assert.is_true(vim.tbl_contains(labels("ts"), cmd.label), cmd.label .. " should remain registered")
 				end
 			end)
 

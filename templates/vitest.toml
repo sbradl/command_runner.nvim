@@ -1,0 +1,8 @@
+[tasks."vitest:file"]
+description = "vitest current file"
+usage = 'arg "<file>"'
+run = 'npx vitest "{{usage.file}}"'
+
+[tasks."vitest:all"]
+description = "vitest all"
+run = "npx vitest"

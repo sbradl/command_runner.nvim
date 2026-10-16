@@ -1,0 +1,37 @@
+name: E2E
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+
+      - uses: jdx/mise-action@v2
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Installs go + dotnet task templates into a fresh project, then picks
+      # and runs go:run and dotnet:test-method from real buffers.
+      - name: Run E2E
+        run: nvim -l scripts/e2e.lua

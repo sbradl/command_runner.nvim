@@ -15,6 +15,12 @@ nvim --headless --noplugin -u scripts/minimal_init.vim \
   -c "PlenaryBustedDirectory tests/ { minimal_init = './scripts/minimal_init.vim' }"
 ```
 
+End-to-end check against real mise/go/dotnet (CI runs it on Linux and Windows via `.github/workflows/e2e.yml`):
+
+```sh
+nvim -l scripts/e2e.lua
+```
+
 Tests use [plenary.nvim](https://github.com/nvim-lua/plenary.nvim), which must be checked out at `../plenary.nvim` (a sibling of this repo) so `scripts/minimal_init.vim` can find it on the runtimepath. Specs live in `tests/**/*_spec.lua`.
 
 **Always forward `scripts/minimal_init.vim` as plenary's `minimal_init`** (the `{ minimal_init = './scripts/minimal_init.vim' }` argument above). `minimal_init.vim` is the single source of test setup: it puts plenary on the runtimepath and adds `tests/` to `package.path` so shared helpers in `tests/test_util.lua` are requirable. Each spec runs in a fresh child nvim, and plenary only passes `minimal_init` down when it is given one — so a bare `PlenaryBustedDirectory tests/` (no `minimal_init`) spawns children without that setup, and specs that `require("test_util")` (the `builtin/*` ones) error out and get *silently* dropped from the aggregate output. For an editor test runner (e.g. neotest-plenary), point its `minimal_init` at `scripts/minimal_init.vim` for the same reason.
@@ -29,7 +35,9 @@ The flow is: `setup()` registers commands into a keyed table → `run_command()`
 - **`lua/command_runner/commands.lua`** — dispatch. `choose_and_run_command` computes the extension (`":directory"` when empty), gathers the choices registered under `"*"` (every buffer), that extension, and `":directory"`, applies each choice's optional `filter(filename)`, expands any choice that has an `expand(filename, bufnr)` into the descriptions it returns (dynamic command sets — e.g. the `mise` builtin returns one entry per `mise tasks ls` task), shows the labels via `vim.ui.select`, then calls the selected description's `cmd(filename, bufnr)` to build a `Command`. Type `"terminal"` (default) opens a terminal in `command.dir` and sends `command_line`; type `"nvim"` runs `command_line` via `vim.cmd`.
 - **`lua/command_runner/types.lua`** — `---@meta` LuaCATS annotations only (`CommandRunnerOpts`, `CommandDescription`, `Command`, etc.). No runtime code; keep it in sync when changing the config schema.
 - **`lua/command_runner/util.lua`** — small shared helpers (e.g. `get_git_dir` via `vim.fs.root`).
-- **`lua/command_runner/builtin/*.lua`** — one module per ecosystem (`ts_vitest`, `ts_playwright`, `cs_dotnet_test`, `lua_plenary`, `ex_mix`, `ex_phoenix`). Each exports `M.commands` plus `M.extensions` (the file extensions those commands register under), and optionally `M.directory_commands` (registered under `":directory"`). `register_builtin_commands` discovers these modules by scanning the `builtin/` directory (resolved relative to the source file, not the runtimepath) and sorting by filename, so the module basename is the builtin's key. Builtins are opt-out: each is enabled unless its key appears in `opts.builtin.disable` (or `opts.builtin == false` disables all).
+- **`templates/*.toml`** — ecosystem commands as mise task templates (`dotnet`, `vitest`, `go`, `mix`, ...). Cross-platform: inline TOML `run` with `{{usage.<arg>}}` placeholders, never shell scripts.
+- **`lua/command_runner/install.lua`** — `install_tasks()`: checklist buffer (pre-checked via `M.detect` markers) that copies checked templates to `<root>/.mise/conf.d/command_runner_<name>.toml` and `mise trust`s them; never overwrites.
+- **`lua/command_runner/builtin/*.lua`** — non-mise commands (`cs_dotnet`, `ts_npm`, `sh_script`) plus `mise`, which lists tasks and, after selection, fills usage args/flags from `M.providers` (keyed by arg name) via `mise tasks info --json`. At pick time a TOML task is hidden when a required `<arg>` in its `usage` (from `mise tasks ls --json`) has a provider that returns nil for the buffer. Each exports `M.commands` plus `M.extensions` (the file extensions those commands register under), and optionally `M.directory_commands` (registered under `":directory"`). `register_builtin_commands` discovers these modules by scanning the `builtin/` directory (resolved relative to the source file, not the runtimepath) and sorting by filename, so the module basename is the builtin's key. Builtins are opt-out: each is enabled unless its key appears in `opts.builtin.disable` (or `opts.builtin == false` disables all).
 
 Internal modules are required by their full path (`require("command_runner.<name>")`) to avoid polluting the global module namespace — plain `require("commands")`/`require("util")` would collide with other plugins.
 
@@ -40,6 +48,10 @@ Internal modules are required by their full path (`require("command_runner.<name
 - Builtin modules conventionally expose a `get_project_dir(filename)` helper that locates the relevant root by marker file (`mix.exs`, `playwright.config.ts`, `*.sln`/`*.csproj`, `package.json`, etc.), used both by `filter` and to set the terminal `dir`.
 - The `"terminal"` executor depends on an external `terminal` module (`require("terminal")`, i.e. terminal.nvim) — it is a runtime dependency, not vendored in this repo.
 - Debug tracing is done with `vim.notify(..., vim.log.levels.DEBUG)` throughout registration.
+
+## Adding a task template
+
+Add `templates/<name>.toml` with tasks named `<name>:<task>`, and a `M.detect[<name>]` marker in `install.lua` so it's pre-checked. Context from nvim comes via `usage` args named after a `providers` entry in `builtin/mise.lua`. Prefer this over a builtin for anything that's a shell command.
 
 ## Adding a builtin
 

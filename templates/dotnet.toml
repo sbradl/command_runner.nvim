@@ -1,0 +1,44 @@
+# Installed by command_runner.nvim. The plugin fills `test_class`, `test_method`,
+# `test_namespace`, `project` and `--mtp` from the current buffer; from a shell pass
+# them yourself, e.g. `mise run dotnet:test-class MyTests src/App.Tests/App.Tests.csproj`.
+# `--mtp`: Microsoft.Testing.Platform mode rejects a positional project.
+
+[tasks."dotnet:test-class"]
+description = "dotnet test current class"
+usage = '''
+flag "--mtp"
+arg "<test_class>"
+arg "<project>"
+'''
+run = 'dotnet test --no-restore --filter "ClassName~{{usage.test_class}}" {% if usage.mtp %}--project {% endif %}"{{usage.project}}"'
+
+[tasks."dotnet:test-method"]
+description = "dotnet test current method"
+usage = '''
+flag "--mtp"
+arg "<test_class>"
+arg "<test_method>"
+arg "<project>"
+'''
+run = 'dotnet test --no-restore --filter "FullyQualifiedName~{{usage.test_class}}.{{usage.test_method}}" {% if usage.mtp %}--project {% endif %}"{{usage.project}}"'
+
+[tasks."dotnet:test-namespace"]
+description = "dotnet test current namespace"
+usage = '''
+flag "--mtp"
+arg "<test_namespace>"
+arg "<project>"
+'''
+run = 'dotnet test --no-restore --filter "FullyQualifiedName~{{usage.test_namespace}}" {% if usage.mtp %}--project {% endif %}"{{usage.project}}"'
+
+[tasks."dotnet:test-project"]
+description = "dotnet test current project"
+usage = '''
+flag "--mtp"
+arg "<project>"
+'''
+run = 'dotnet test --no-restore {% if usage.mtp %}--project {% endif %}"{{usage.project}}"'
+
+[tasks."dotnet:test-solution"]
+description = "dotnet test solution"
+run = "dotnet test --no-restore"

@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased (experiment/mise-tasks)
+
+### Added
+
+- `install_tasks()`: checklist of mise task templates (detected ones
+  pre-checked), copied into `.mise/conf.d` and trusted on `:w`.
+- `mise` builtin: fills task usage args/flags (`file`, `line`, `dir`, `test_class`,
+  `test_method`, `test_namespace`, `project`, `--mtp`) from the current buffer, and
+  hides tasks whose required args can't be filled (e.g. `dotnet:test-method`
+  outside a C# test file).
+
+### Removed
+
+- **Breaking:** builtins `cs_dotnet_test`, `docker_compose`, `ex_mix`,
+  `ex_phoenix`, `go_go`, `lua_plenary`, `ts_angular`, `ts_playwright`,
+  `ts_vitest`. Install them as mise tasks via `install_tasks()` instead.
+  `mix new`/`phx new` have no replacement.
+
 ## 2026-10-16
 
 ### Fixed

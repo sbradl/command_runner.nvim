@@ -1,0 +1,11 @@
+[tasks."mix:compile"]
+description = "mix compile"
+run = "mix compile"
+
+[tasks."mix:test"]
+description = "mix test"
+run = "mix test"
+
+[tasks."mix:release"]
+description = "mix release"
+run = "mix release"

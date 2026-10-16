@@ -1,0 +1,10 @@
+# Runs a headless nvim with your own config, which must load plenary.nvim.
+
+[tasks."plenary:file"]
+description = "Plenary test file"
+usage = 'arg "<file>"'
+run = 'nvim --headless -c "PlenaryBustedFile {{usage.file}}"'
+
+[tasks."plenary:all"]
+description = "Plenary test all"
+run = 'nvim --headless -c "PlenaryBustedDirectory tests"'

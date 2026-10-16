@@ -1,0 +1,3 @@
+[tasks."phx:server"]
+description = "mix phx.server"
+run = "mix phx.server"

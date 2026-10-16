@@ -1,6 +1,6 @@
 ---@meta command_runner types
 
----@alias BuiltinCommands string A builtin key: the basename (without `.lua`) of a module in `lua/command_runner/builtin/`, e.g. "ts_vitest".
+---@alias BuiltinCommands string A builtin key: the basename (without `.lua`) of a module in `lua/command_runner/builtin/`, e.g. "ts_npm".
 
 ---@class CommandRunnerOpts
 ---@field builtin? BuiltinOpts | false Options for the builtin commands. Pass `false` to disable all builtins at once.

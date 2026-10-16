@@ -87,6 +87,12 @@ M.run_command = function()
 	require("command_runner.commands").choose_and_run_command(M._commands, M._opts)
 end
 
+--- Open a checklist of mise task templates (detected ones pre-checked) and
+--- copy the checked ones into the project's .mise/conf.d on `:w`.
+M.install_tasks = function()
+	require("command_runner.install").open_checklist()
+end
+
 --- Rerun the last executed command without showing the picker.
 M.rerun_command = function()
 	require("command_runner.commands").rerun_command(M._opts)
