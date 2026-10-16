@@ -111,7 +111,7 @@ M.open_checklist = function()
 	local detected = M.detected(root, filename ~= "" and filename or vim.fs.joinpath(root, "_"))
 
 	local lines = {
-		"# Install mise tasks into " .. vim.fs.joinpath(root, M.target_subdir),
+		"# Install mise tasks into " .. vim.fn.fnamemodify(vim.fs.joinpath(root, M.target_subdir), ":~:."),
 		"# x: toggle   :w install checked   (installed files are never overwritten)",
 		"",
 	}

@@ -1,47 +1,165 @@
 # command_runner.nvim
 
 [![Tests](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/sbradl/command_runner.nvim/actions/workflows/ci.yml)
+[![E2E](https://github.com/sbradl/command_runner.nvim/actions/workflows/e2e.yml/badge.svg)](https://github.com/sbradl/command_runner.nvim/actions/workflows/e2e.yml)
 
-Pick and run commands for the current file: every task from
-[mise](https://mise.jdx.dev), filled with context from the current buffer, plus
-a few editor actions.
+Run your project's [mise](https://mise.jdx.dev) tasks from Neovim, with the
+current file, cursor line, test class or test method filled in for you.
 
-## run_command
+The plugin doesn't hard-code commands like "dotnet test current method". It
+ships them as **mise task templates** that you install into a project once.
+After that they are ordinary mise tasks: you can edit them, commit them, and
+run them from a shell too. When you run one from Neovim, the plugin passes in
+context from the current buffer.
 
-Based on the current file a selection of commands is displayed.
-![image](./screenshot_commands.png)
+> **Experimental:** on this branch every ecosystem command is a mise task. The
+> old autodetected builtins (`ts_vitest`, `cs_dotnet_test`, `ex_mix`, ...) are
+> gone.
 
-The selected command will be executed when selected.
-![image](./screenshot_commands_executed.png)
-
-### Rerun and history
-
-Every executed command is recorded in a history, most recent first (capped at
-`history_size`, default 10 — see [Setup](#setup)). Repeating a command that's
-already in history moves it back to the front instead of adding a duplicate.
-
-`require("command_runner").rerun_command()` replays the most recent entry
-directly, without showing a picker (it warns when no command has been run
-yet):
+## Quick start
 
 ```lua
-vim.keymap.set("n", "<leader>rr", require("command_runner").rerun_command, { desc = "Rerun last command" })
+-- lazy.nvim
+{
+  "sbradl/command_runner.nvim",
+  dependencies = { "sbradl/terminal.nvim" },
+  config = function()
+    local r = require("command_runner")
+    r.setup()
+
+    vim.keymap.set("n", "<leader>rc", r.run_command, { desc = "Run command" })
+    vim.keymap.set("n", "<leader>ri", r.install_tasks, { desc = "Install mise tasks" })
+    vim.keymap.set("n", "<leader>rr", r.rerun_command, { desc = "Rerun last command" })
+    vim.keymap.set("n", "<leader>rh", r.show_history, { desc = "Command history" })
+  end,
+}
 ```
 
-`require("command_runner").show_history()` opens a picker over the whole
-history. Selecting an entry re-executes it and moves it to the front:
+Requirements:
 
-```lua
-vim.keymap.set("n", "<leader>rh", require("command_runner").show_history, { desc = "Command history" })
+- Neovim 0.12+
+- [mise](https://mise.jdx.dev) on your `PATH`
+- [terminal.nvim](https://github.com/sbradl/terminal.nvim), which tasks run in
+
+## 1. Install tasks into your project
+
+Run `install_tasks()` in a project. It opens a checklist of the bundled
+templates. Templates matching the project's marker files (`*.csproj`,
+`go.mod`, `mix.exs`, `package.json`, ...) are already checked.
+
+![Install checklist with dotnet and go pre-checked](./docs/images/01-install.png)
+
+Press `x` to toggle a line and `:w` to install. Each checked template is copied
+to `.mise/conf.d/command_runner_<name>.toml` in the project root (git root, or
+cwd) and `mise trust`ed. mise loads `conf.d` on its own, so no `mise.toml` is
+needed.
+
+Installed files are yours. They are never overwritten, so edit them freely. To
+get a fresh copy, delete the file and install again.
+
+### Bundled templates
+
+| Template     | Pre-checked when the project has                | Tasks                                                        |
+| ------------ | ----------------------------------------------- | ------------------------------------------------------------ |
+| `dotnet`     | `*.sln`, `*.slnx`, `*.csproj`                   | `test-class`, `test-method`, `test-namespace`, `test-project`, `test-solution` |
+| `go`         | `go.mod`                                        | `run` (current package), `build`                             |
+| `vitest`     | `vitest.config.ts`/`.js`                        | `file`, `all`                                                |
+| `playwright` | `playwright.config.ts`                          | `test`                                                       |
+| `npm`        | `package.json`                                  | `build`                                                      |
+| `mix`        | `mix.exs`                                       | `compile`, `test`, `release`                                 |
+| `phoenix`    | `mix.exs`                                       | `server`                                                     |
+| `docker`     | `compose.yml`, `docker-compose.yml`, ...        | `up`, `down`, `build`, `logs`, `ps`, `restart`               |
+| `plenary`    | never pre-checked                               | `file`, `all` (headless nvim with your config)               |
+
+Tasks are named `<template>:<task>`, e.g. `dotnet:test-method`. All templates
+use inline TOML `run` commands, so they work on Linux, macOS and Windows.
+
+## 2. Pick a task
+
+`run_command()` lists every mise task in the project, plus a few editor actions
+(open `.sln`/`.csproj`, edit `package.json`, run the current script). Tasks are
+only offered when they make sense for the current buffer. In a C# test file
+you get the per-class and per-method test tasks:
+
+![Picker in a C# test file](./docs/images/02-picker-test-file.png)
+
+In a Go file the same project offers no class or method tests:
+
+![Picker in a Go file](./docs/images/03-picker-go-file.png)
+
+Your own tasks from `mise.toml` (like `lint` above) appear alongside the
+installed ones.
+
+## 3. Run it
+
+Type to filter, then press Enter:
+
+![Filtering the picker to dotnet:test-method](./docs/images/04-picker-filtered.png)
+
+The plugin fills the task's arguments from the buffer and runs it in a
+terminal at the project root:
+
+![dotnet:test-method running in a terminal](./docs/images/05-run.png)
+
+The command line is a plain `mise run`, so you can copy it and run it from any
+shell.
+
+## How context is passed
+
+Tasks declare arguments with mise's
+[usage spec](https://mise.jdx.dev/tasks/task-arguments.html). When an argument
+or flag has one of these names, the plugin fills it in:
+
+| Name                                            | Value                                                                   |
+| ----------------------------------------------- | ----------------------------------------------------------------------- |
+| `file`                                          | current file, relative to the task dir                                  |
+| `line`                                          | cursor line                                                             |
+| `dir`                                           | current file's directory, `./`-prefixed                                 |
+| `test_class`, `test_method`, `test_namespace`   | C# class, method or namespace at the cursor, only in a test file (`[TestClass]`, `[Fact]`, `[Test]`, ...) |
+| `project`                                       | nearest `.csproj`, relative to the task dir                             |
+| `--mtp` (flag)                                  | set when `global.json` selects Microsoft.Testing.Platform               |
+
+- **Availability:** a task is offered only if every required `<arg>` with one
+  of these names gets a value. That's why `dotnet:test-method` shows up only
+  in a C# test file with the cursor inside a method.
+- **Not filtered:** tasks without arguments show everywhere in the project.
+  Script-file tasks always show too, because `mise tasks ls` doesn't report
+  their usage.
+- **Fill order:** arguments are passed in order, stopping at the first name
+  the plugin doesn't know. mise reports anything still missing.
+
+### Writing your own
+
+Any mise task can opt in. For example, in `mise.toml`:
+
+```toml
+[tasks."spec:file"]
+description = "Run the current spec file"
+usage = 'arg "<file>"'
+run = 'bundle exec rspec "{{usage.file}}"'
+
+[tasks."spec:line"]
+description = "Run the example at the cursor"
+usage = '''
+arg "<file>"
+arg "<line>"
+'''
+run = 'bundle exec rspec "{{usage.file}}:{{usage.line}}"'
 ```
 
-`require("command_runner").rerun_command_description()` returns a string
-describing what `rerun_command()` would run (e.g. `"Rerun: run — make — src"`),
-or `nil` when history is empty. The directory is shortened relative to its git
-repository root, or to Neovim's cwd when it isn't inside one. Use it for a
-dynamic which-key `desc` (which-key
-re-evaluates a function `desc` each time the popup opens — `vim.keymap.set`'s
-`desc` can't do this, it must be a static string):
+From a shell, pass the arguments yourself:
+`mise run spec:file spec/cart_spec.rb`.
+
+## Rerun and history
+
+Every command you run is recorded, most recent first. Running the same command
+again moves it to the front instead of duplicating it.
+
+- `rerun_command()` replays the most recent entry without a picker.
+- `show_history()` opens a picker over the whole history.
+- `rerun_command_description()` returns a `"Rerun: <label> — <command line>"`
+  description of the last command, or `nil` when history is empty. Use it for
+  a dynamic which-key `desc`:
 
 ```lua
 require("which-key").add({
@@ -55,156 +173,65 @@ require("which-key").add({
 })
 ```
 
-Both are snapshots: they repeat the command exactly as it ran before — same
-command line, same directory — even if the current buffer has changed in the
-meantime (e.g. tests that ran in project A are rerun in project A, even from
-a file in project B), and are independent of the current file's extension.
-History is kept for the duration of the Neovim session only.
+History entries are snapshots: a rerun uses the same command line and
+directory as the original run, even from another buffer or project. History
+lasts for the Neovim session only.
 
-## install_tasks
+## Setup options
 
-Ecosystem commands (dotnet test, vitest, go, mix, docker compose, ...) ship as
-mise task templates in [`templates/`](./templates).
-`require("command_runner").install_tasks()` opens a checklist for the current
-project (git root, else cwd). Templates detected from marker files are
-pre-checked. Press `x` to toggle a line and `:w` to copy the checked ones to
-`.mise/conf.d/command_runner_<name>.toml` and `mise trust` them. mise picks
-them up automatically, with no `mise.toml` required. Files that are already
-installed are never overwritten, so edit them freely.
-
-```lua
-vim.keymap.set("n", "<leader>ri", require("command_runner").install_tasks, { desc = "Install mise tasks" })
-```
-
-### Passing the current file
-
-When you pick a task, the plugin reads its
-[usage spec](https://mise.jdx.dev/tasks/task-arguments.html) and passes each
-arg or flag it recognises by name:
-
-| name        | value                                                    |
-| ----------- | -------------------------------------------------------- |
-| `file`      | current file, relative to the task dir                   |
-| `line`      | cursor line                                              |
-| `dir`       | current file's directory, `./`-prefixed                  |
-| `test_class`, `test_method`, `test_namespace` | C# class/method/namespace at the cursor, only in a test file (`[TestClass]`, `[Fact]`, `[Test]`, ...) |
-| `project`   | nearest `.csproj`, relative to the task dir              |
-| `--mtp`     | flag, set when `global.json` selects Microsoft.Testing.Platform |
-
-Arguments are filled in order, stopping at the first name it doesn't
-recognise. A task is only offered when every required `<arg>` with one of these
-names gets a value, e.g. `dotnet:test-method` only shows up in a C# test file
-with the cursor inside a method. Tasks without args are offered everywhere
-in the project, and so are script-file tasks (`mise tasks ls` doesn't report
-their usage). The same task works from a shell:
-
-```toml
-[tasks."vitest:file"]
-usage = 'arg "<file>"'
-run = 'npx vitest "{{usage.file}}"'
-```
-
-## Requirements
-
-- Neovim (with `vim.fs`, i.e. 0.8+).
-- [terminal.nvim](https://github.com/sbradl/terminal.nvim) — a runtime dependency, but only for commands executed in a terminal (`type = "terminal"`, the default). Commands with `type = "nvim"` do not need it.
-
-## Installation
-
-Using [lazy.nvim](https://github.com/folke/lazy.nvim):
-
-```lua
-{
- "sbradl/command_runner.nvim",
- dependencies = { "sbradl/terminal.nvim" },
- config = function()
-  require("command_runner").setup()
-
-  -- Bind the picker to a key of your choice.
-  vim.keymap.set("n", "<leader>rc", require("command_runner").run_command, { desc = "Run command" })
- end,
-}
-```
-
-## Setup
-
-Call `require("command_runner").setup(opts)` once. Calling it again replaces the
-previous configuration. `opts` is optional; with no arguments every builtin is
-enabled.
+`setup(opts)` is optional, and calling it again replaces the previous
+configuration.
 
 ```lua
 require("command_runner").setup({
- -- Builtins are opt-out: list the keys you want to disable.
- builtin = {
-  disable = { "ts_npm" },
- },
+  -- Builtins (non-mise editor actions + the mise task list) are opt-out.
+  builtin = {
+    disable = { "ts_npm" }, -- or `builtin = false` to disable all
+  },
 
- -- Close the terminal automatically when a command exits successfully
- -- (defaults shown).
- autoclose_on_success = true,
- autoclose_delay_in_seconds = 3,
+  -- Close the terminal when a command succeeds (defaults shown).
+  autoclose_on_success = true,
+  autoclose_delay_in_seconds = 3,
 
- -- Number of recent commands kept for the history picker (default shown).
- history_size = 10,
+  -- Entries kept for show_history().
+  history_size = 10,
 })
 ```
+
+The builtins live in [`lua/command_runner/builtin`](./lua/command_runner/builtin).
+Each one's key is its filename without `.lua`:
+
+| Key         | Provides                                       |
+| ----------- | ---------------------------------------------- |
+| `mise`      | every mise task in the project                 |
+| `cs_dotnet` | open solution file, open project file          |
+| `ts_npm`    | edit `package.json`                            |
+| `sh_script` | execute the current `.sh`/`.ps1` script        |
 
 ### Autoclose
 
-With `autoclose_on_success` enabled (the default), terminal commands are sent
-as `<command_line> && sleep <delay> && exit`: on success the shell exits after
-`autoclose_delay_in_seconds` and Neovim deletes the terminal buffer; on failure
-the shell stays open with the output. Pressing `Ctrl-C` during the delay
-cancels the pending `exit` and keeps the terminal. A delay of `0` closes
-immediately.
+With `autoclose_on_success`, a command is sent to the terminal as
+`<command> && sleep <delay> && exit`:
 
-The buffer deletion is done via our own `TermClose` autocmd (checking
-`v:event.status == 0`), not Neovim's built-in one — the built-in autocmd only
-fires when the job's argv string-matches `'shell'` exactly, which is unreliable
-on Windows (see [neovim#28384](https://github.com/neovim/neovim/issues/28384)).
+- **On success:** the shell exits after the delay and the terminal buffer is
+  deleted.
+- **On failure:** the terminal stays open with the output.
+- **Keeping it open:** press `Ctrl-C` during the delay.
 
-This requires a shell where the `&&` chain is valid — any POSIX shell or
-PowerShell 7+ (where `sleep` aliases `Start-Sleep`). On Windows the final
-`exit` is sent as `[Environment]::Exit(0)` instead, since PowerShell's `exit`
-keyword isn't valid on the right-hand side of `&&`. Notably `cmd.exe` and
-Windows PowerShell 5.1 are not supported; set `autoclose_on_success = false`
-there.
+This needs a shell where `&&` works: any POSIX shell, or PowerShell 7+. On
+Windows, `exit` is sent as `[Environment]::Exit(0)`. `cmd.exe` and Windows
+PowerShell 5.1 aren't supported there, so set `autoclose_on_success = false`.
 
-### Builtins
+## Development
 
-Builtins are the few non-mise commands — editor actions (open `.sln`/`.csproj`,
-edit `package.json`), executing the current script — plus the `mise` builtin
-that lists all tasks. Each is enabled by default.
-Builtins are autoloaded from [`lua/command_runner/builtin`](./lua/command_runner/builtin);
-each file is named `<ext>_<name>.lua`, and its key is that filename without the
-`.lua` extension (e.g. `ts_npm`, `cs_dotnet`). See that directory for the
-full list and the commands each one provides.
+```sh
+# unit tests (needs ../plenary.nvim)
+nvim --headless --noplugin -u scripts/minimal_init.vim \
+  -c "PlenaryBustedDirectory tests/ { minimal_init = './scripts/minimal_init.vim' }"
 
-Disable specific builtins by listing their keys in `builtin.disable`:
-
-```lua
-require("command_runner").setup({
- builtin = {
-  disable = { "ts_npm", "sh_script" },
- },
-})
+# end-to-end against real mise, go and dotnet (CI runs it on Linux and Windows)
+nvim -l scripts/e2e.lua
 ```
 
-Or disable all of them at once with `builtin = false`:
-
-```lua
-require("command_runner").setup({ builtin = false })
-```
-
-## Custom commands
-
-There is no custom command configuration. For project-specific commands, the
-recommended approach is to define them as [mise tasks](https://mise.jdx.dev/tasks/)
-in your project's `mise.toml`. The `mise` builtin lists every task in the picker
-for any buffer inside a mise project:
-
-```toml
-[tasks.serve]
-description = "Start the dev server"
-run = "npm run dev"
-```
+To add a template, create `templates/<name>.toml` and add a marker entry to
+`M.detect` in [`lua/command_runner/install.lua`](./lua/command_runner/install.lua).
